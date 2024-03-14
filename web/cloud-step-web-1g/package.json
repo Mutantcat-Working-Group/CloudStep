@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "layui": "^2.9.7",
     "vue": "^3.4.21"
   },
   "devDependencies": {

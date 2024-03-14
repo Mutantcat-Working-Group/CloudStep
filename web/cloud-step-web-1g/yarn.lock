@@ -394,6 +394,11 @@ he@^1.2.0:
   resolved "https://registry.npmmirror.com/he/-/he-1.2.0.tgz#84ae65fa7eafb165fddb61566ae14baf05664f0f"
   integrity sha512-F/1DnUGPopORZi0ni+CvrCgHQ5FyEAHRLSApuYWMmrbSwoN2Mn/7k+Gl38gJnR7yyDZk6WLXwiGod1JOWNDKGw==
 
+layui@^2.9.7:
+  version "2.9.7"
+  resolved "https://registry.npmmirror.com/layui/-/layui-2.9.7.tgz#2421b70ff58dd8a1d1a7eb920991643db47a6df4"
+  integrity sha512-rNDc8SoKEg6B10pUaUtD9gT79Tdbgc111/Yid9i0KNa95JQkhK/yKjgW4RYEIPtVdiFVjlJ0Ce6OnMhLKSwhQg==
+
 lru-cache@^6.0.0:
   version "6.0.0"
   resolved "https://registry.npmmirror.com/lru-cache/-/lru-cache-6.0.0.tgz#6d6fe6570ebd96aaf90fcad1dafa3b2566db3a94"
