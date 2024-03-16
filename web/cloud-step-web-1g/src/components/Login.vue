@@ -42,7 +42,7 @@ function login() {
                     <div class="layui-input-prefix">
                         <i class="layui-icon layui-icon-username"></i>
                     </div>
-                    <input type="text" placeholder="管理员账号" v-model="username" class="layui-input">
+                    <input type="text" placeholder="管理员账号" v-model="username" class="layui-input" style="caret-color: black;">
                 </div>
             </div>
             <div class="password">
@@ -50,7 +50,7 @@ function login() {
                     <div class="layui-input-prefix">
                         <i class="layui-icon layui-icon-password"></i>
                     </div>
-                    <input type="password" placeholder="管理员密码" v-model="password" class="layui-input">
+                    <input type="password" placeholder="管理员密码" v-model="password" class="layui-input" style="caret-color: black;">
                 </div>
             </div>
         </div>

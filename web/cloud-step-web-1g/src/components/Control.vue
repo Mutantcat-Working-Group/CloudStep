@@ -28,7 +28,7 @@ function removeCollection() {
                 <li>代理模式</li>
                 <li>系统管理</li>
             </ul>
-            <div class="layui-tab-content">
+            <div class="layui-tab-content" style="height:95%;overflow:auto;">
                 <div class="layui-tab-item layui-show">
                     <div class="collection">
                         <h2 class="control">添加映射集</h2>
@@ -56,7 +56,8 @@ function removeCollection() {
                                     </div>
                                     <div class="layui-col-xs3">
                                         <div class="text-center center-item"><input type="text" lay-affix="clear"
-                                                placeholder="http://abc.def:1234/xxx" class="layui-input"></div>
+                                                placeholder="http://abc.def:1234/xxx" class="layui-input"
+                                                style="caret-color: black;"></div>
                                     </div>
                                     <div class="layui-col-xs3">
                                         <div class="text-center center-item">{{ item.status }}</div>
@@ -72,17 +73,25 @@ function removeCollection() {
                                 </div>
                             </div>
                             <div class="center">
-                                <button type="button" class="layui-btn" @click="removeCollection()" style="float:left;">减少</button>
-                                <button type="button" class="layui-btn" @click="addCollection()" style="float:right;">增加</button>
+                                <button type="button" class="layui-btn" @click="removeCollection()"
+                                    style="float:left;">减少</button>
+                                <button type="button" class="layui-btn" @click="addCollection()"
+                                    style="float:right;">增加</button>
                             </div>
                         </div>
                         <div class="layui-input-group center">
                             <div class="layui-input-split layui-input-prefix">
                                 映射集名称
                             </div>
-                            <input type="text" placeholder="映射集的唯一标识" class="layui-input">
+                            <input type="text" placeholder="映射集的唯一标识" class="layui-input" style="caret-color: black;">
                         </div>
-                        <button type="button" class="layui-btn layui-bg-blue" style="margin:0 auto;display:block;margin-top:10px;width:300px;">添加此映射集</button>
+                        <div
+                            style="display: flex; justify-content: center;align-items: center;width:90%;margin:0 auto;">
+                            <button type="button" class="layui-btn layui-bg-blue"
+                                style="margin:0 auto;display:inline-block;margin-top:10px;width:300px;">废弃此映射集</button>
+                            <button type="button" class="layui-btn layui-bg-blue"
+                                style="margin:0 auto;display:inline-block;margin-top:10px;width:300px;">添加此映射集</button>
+                        </div>
                         <h2 class="info">映射集列表</h2>
                     </div>
                 </div>
@@ -118,7 +127,7 @@ function removeCollection() {
 }
 
 .main-contant {
-    width: 96vw;
+    width: 100vw;
     height: 100%;
     margin: 0 auto;
 }
