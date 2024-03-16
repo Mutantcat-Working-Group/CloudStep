@@ -7,5 +7,5 @@ import (
 func init() {
 	tm := timer.NewTimer()
 	registerHotTimeCleanScheduler(tm)
-	tm.Run()
+	go tm.Run()
 }

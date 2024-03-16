@@ -1,4 +1,35 @@
 <script setup lang="ts">
+import request from '../utils/request'
+import { ref,defineEmits  } from 'vue'
+
+const emit = defineEmits(['check'])
+const username = ref("")
+const password = ref("")
+
+function login() {
+    request.request<any>(
+        {
+            url: '../login',
+            method: 'post',
+            data: {
+                username: username.value,
+                password: username.value
+            }
+        }
+    ).then((res) => {
+        if (res.data.code === 0) {
+            window.sessionStorage.setItem('token', res.data.token)
+            emit('check')
+        } else if (res.data.code == 2) {
+            alert('尝试失败次数太多，请三分钟之后再尝试登录。')
+        }
+        else {
+            alert('用户名或密码错误。')
+        }
+    }).catch(() => {
+        alert('登录错误。')
+    });
+}
 </script>
 
 <template>
@@ -11,7 +42,7 @@
                     <div class="layui-input-prefix">
                         <i class="layui-icon layui-icon-username"></i>
                     </div>
-                    <input type="text" placeholder="管理员账号" class="layui-input">
+                    <input type="text" placeholder="管理员账号" v-model="username" class="layui-input">
                 </div>
             </div>
             <div class="password">
@@ -19,12 +50,13 @@
                     <div class="layui-input-prefix">
                         <i class="layui-icon layui-icon-password"></i>
                     </div>
-                    <input type="text" placeholder="管理员密码" class="layui-input">
+                    <input type="password" placeholder="管理员密码" v-model="password" class="layui-input">
                 </div>
             </div>
         </div>
-        <button type="button" class="layui-btn layui-bg-blue login">登录后台</button>
-        <a class="foot" href="https://github.com/MutantCat-Working-Group/CloudStep" target="_self">https://github.com/MutantCat-Working-Group/CloudStep</a>
+        <button type="button" class="layui-btn layui-bg-blue login" @click="login()">登 录</button>
+        <a class="foot" href="https://github.com/MutantCat-Working-Group/CloudStep"
+            target="_self">https://github.com/MutantCat-Working-Group/CloudStep</a>
     </div>
 </template>
 
@@ -53,7 +85,7 @@
     font-weight: 400;
 }
 
-.userinfo{
+.userinfo {
     width: 500px;
     margin: 0 auto;
 }
@@ -62,11 +94,11 @@
     margin-top: 20px;
 }
 
-.password{
+.password {
     margin-top: 10px;
 }
 
-.login{
+.login {
     width: 200px;
     margin: 0 auto;
     margin-top: 20px;
@@ -84,7 +116,7 @@
     transition: all 0.3s;
 }
 
-.foot{
+.foot {
     width: 100%;
     text-align: center;
     font-size: 20px;

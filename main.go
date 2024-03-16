@@ -9,6 +9,6 @@ import (
 
 func main() {
 	gin := lifecycle.InitGin()
-	lifecycle.RegisterRouter(gin, &router.WebRouter{})
+	lifecycle.RegisterRouter(gin, &router.WebRouter{}, &router.LoginRouter{})
 	lifecycle.StartGin(gin, "9091")
 }
