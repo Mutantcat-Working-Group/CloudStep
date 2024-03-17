@@ -121,9 +121,11 @@ function clearCollection() {
                         <h2 class="control">通用设置</h2>
                         <h2 class="control">密码设置</h2>
                         <h2 class="info">关于</h2>
-                        <div>
-                            <p>高性能的、一键启动的、代理（反向代理）的、自助代理的、负载均衡的服务地址管理工具。</p>
-                            <p></p>
+                        <div class="text-center">
+                            <p>安全的、高性能的、可独立部署的、代理（反向代理）的、自助代理的、负载均衡的、可持久化的服务地址管理工具。</p>
+                            <p>https://www.mutantcat.org/software/cloudstep</p>
+                            <p>Copyright © 2024 Mutantcat ALL Rights Reserved.</p>
+                            <p>版本：1.0.20240317</p>
                         </div>
                     </div>
                 </div>

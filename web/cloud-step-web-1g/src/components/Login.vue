@@ -55,8 +55,8 @@ function login() {
             </div>
         </div>
         <button type="button" class="layui-btn layui-bg-blue login" @click="login()">登 录</button>
-        <a class="foot" href="https://github.com/MutantCat-Working-Group/CloudStep"
-            target="_self">https://github.com/MutantCat-Working-Group/CloudStep</a>
+        <a class="foot" href="https://www.mutantcat.org/"
+            target="_self">https://www.mutantcat.org/</a>
     </div>
 </template>
 
