@@ -6,20 +6,20 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type ProxyRouter struct {
+type SelfHelpRouter struct {
 }
 
-func (router *ProxyRouter) PrepareRouter() error {
+func (router *SelfHelpRouter) PrepareRouter() error {
 	return nil
 }
 
-func (router *ProxyRouter) InitRouter(context *gin.Engine) error {
-	context.Any("/proxy", proxy)
-	context.Any("/proxy/:way", proxy)
+func (router *SelfHelpRouter) InitRouter(context *gin.Engine) error {
+	context.Any("/self", proxy)
+	context.Any("/self/:way", proxy)
 	return nil
 }
 
-func (router *ProxyRouter) DestroyRouter() error {
+func (router *SelfHelpRouter) DestroyRouter() error {
 	return nil
 }
 
