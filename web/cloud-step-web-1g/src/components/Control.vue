@@ -6,6 +6,8 @@ const addCollections = ref([{
     status: "未知"
 }])
 
+const addCollectionsName = ref("")
+
 function addCollection() {
     addCollections.value.push({
         address: "",
@@ -15,6 +17,14 @@ function addCollection() {
 
 function removeCollection() {
     addCollections.value.pop()
+}
+
+function clearCollection() {
+    addCollections.value = [{
+        address: "",
+        status: "未知"
+    }]
+    addCollectionsName.value = ""
 }
 
 </script>
@@ -72,7 +82,7 @@ function removeCollection() {
                                     </div>
                                 </div>
                             </div>
-                            <div class="center">
+                            <div style="height:38px;">
                                 <button type="button" class="layui-btn" @click="removeCollection()"
                                     style="float:left;">减少</button>
                                 <button type="button" class="layui-btn" @click="addCollection()"
@@ -83,14 +93,11 @@ function removeCollection() {
                             <div class="layui-input-split layui-input-prefix">
                                 映射集名称
                             </div>
-                            <input type="text" placeholder="映射集的唯一标识" class="layui-input" style="caret-color: black;">
-                        </div>
-                        <div
-                            style="display: flex; justify-content: center;align-items: center;width:90%;margin:0 auto;">
-                            <button type="button" class="layui-btn layui-bg-blue"
-                                style="margin:0 auto;display:inline-block;margin-top:10px;width:300px;">废弃此映射集</button>
-                            <button type="button" class="layui-btn layui-bg-blue"
-                                style="margin:0 auto;display:inline-block;margin-top:10px;width:300px;">添加此映射集</button>
+                            <input type="text" placeholder="映射集的唯一标识" class="layui-input" style="caret-color: black;" v-model="addCollectionsName"/>
+                            <div class="layui-input-suffix">
+                                <button class="layui-btn layui-btn-primary">添加映射集</button>
+                                <button class="layui-btn layui-btn-primary" @click="clearCollection()">重置映射集</button>
+                            </div>
                         </div>
                         <h2 class="info">映射集列表</h2>
                     </div>
@@ -111,7 +118,13 @@ function removeCollection() {
                 </div>
                 <div class="layui-tab-item">
                     <div class="collection">
+                        <h2 class="control">通用设置</h2>
                         <h2 class="control">密码设置</h2>
+                        <h2 class="info">关于</h2>
+                        <div>
+                            <p>高性能的、一键启动的、代理（反向代理）的、自助代理的、负载均衡的服务地址管理工具。</p>
+                            <p></p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -141,28 +154,28 @@ function removeCollection() {
 
 .collection .control {
     font-size: 20px;
-    color: #333;
+    color: #225864;
     font-weight: 400;
     margin-top: 10px;
     margin-bottom: 10px;
-    border: #333 1px solid;
-    border-radius: 15px;
+    border: #d5e9f7 1px solid;
+    border-radius: 5px;
     padding: 10px;
     text-align: center;
-    background-color: rgb(81, 199, 242);
+    background-color: rgb(54, 201, 255);
 }
 
 .collection .info {
     font-size: 20px;
-    color: #333;
+    color: #225864;
     font-weight: 400;
     margin-top: 10px;
     margin-bottom: 10px;
-    border: #333 1px solid;
-    border-radius: 15px;
+    border: #d5e9f7 1px solid;
+    border-radius: 5px;
     padding: 10px;
     text-align: center;
-    background-color: rgb(81, 199, 242);
+    background-color: rgb(54, 201, 255);
 }
 
 .center {
