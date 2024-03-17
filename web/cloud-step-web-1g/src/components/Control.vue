@@ -181,7 +181,7 @@ function pingAddress(newindex:any){
 
 .collection .control {
     font-size: 20px;
-    color: #225864;
+    color: #1a393f;
     font-weight: 400;
     margin-top: 10px;
     margin-bottom: 10px;
@@ -189,12 +189,12 @@ function pingAddress(newindex:any){
     border-radius: 5px;
     padding: 10px;
     text-align: center;
-    background-color: rgb(54, 201, 255);
+    background-color: #CCCCCC;
 }
 
 .collection .info {
     font-size: 20px;
-    color: #225864;
+    color: #1a393f;
     font-weight: 400;
     margin-top: 10px;
     margin-bottom: 10px;
@@ -202,7 +202,7 @@ function pingAddress(newindex:any){
     border-radius: 5px;
     padding: 10px;
     text-align: center;
-    background-color: rgb(54, 201, 255);
+    background-color: #CCCCCC;
 }
 
 .center {
