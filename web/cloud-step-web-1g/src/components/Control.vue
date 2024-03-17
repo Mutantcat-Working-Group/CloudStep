@@ -75,8 +75,6 @@ function clearCollection() {
                                     <div class="layui-col-xs3">
                                         <div class="text-center center-item">
                                             <button type="button"
-                                                class="layui-btn layui-btn-primary layui-btn-sm">本地Ping</button>
-                                            <button type="button"
                                                 class="layui-btn layui-btn-primary layui-btn-sm">服务端Ping</button>
                                         </div>
                                     </div>

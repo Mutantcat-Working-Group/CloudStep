@@ -14,6 +14,7 @@ type NowWorkCllection struct {
 	WorkCllection string // 当前映射集地址
 	Mode          string // 当前模式: 轮询、随机
 	Index         int    // 当前映射集的索引(用于轮询模式)
+	AliveNum      int    // 存活的路径数
 }
 
 // 所有映射集

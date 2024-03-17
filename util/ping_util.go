@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func getSpeed(url string) string {
+func GetTCPSpeed(url string) string {
 	timeout := time.Duration(5 * time.Second)
 	start := time.Now()
 	_, err := net.DialTimeout("tcp", url, timeout)
