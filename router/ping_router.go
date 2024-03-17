@@ -13,7 +13,7 @@ func (router *PingRouter) PrepareRouter() error {
 }
 
 func (router *PingRouter) InitRouter(context *gin.Engine) error {
-	context.POST("/ping", ping)
+	context.POST("/ping", LoginHandler(), ping)
 	return nil
 }
 

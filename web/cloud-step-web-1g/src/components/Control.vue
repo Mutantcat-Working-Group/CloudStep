@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import request from '../utils/request'
 
 const addCollections = ref([{
     address: "",
@@ -27,6 +28,30 @@ function clearCollection() {
     addCollectionsName.value = ""
 }
 
+function pingAddress(newindex:any){
+    request.request<any>(
+        {
+            url: '../ping',
+            method: 'post',
+            data: {
+                url: addCollections.value[newindex].address
+            },
+            headers: {
+                "Token": window.sessionStorage.getItem('token')
+            }
+        }
+    ).then((res) => {
+        if (res.data.code === 0) {
+            addCollections.value[newindex].status = res.data.ms
+        } else {
+            addCollections.value[newindex].status = "Ping失败"
+        }
+    }).catch(() => {
+        addCollections.value[newindex].status = "Ping失败"
+    });
+
+}
+
 </script>
 
 <template>
@@ -52,7 +77,7 @@ function clearCollection() {
                                         <div class="text-center bigger-text">地址</div>
                                     </div>
                                     <div class="layui-col-xs3">
-                                        <div class="text-center bigger-text">状态</div>
+                                        <div class="text-center bigger-text">延迟</div>
                                     </div>
                                     <div class="layui-col-xs3">
                                         <div class="text-center bigger-text">操作</div>
@@ -66,8 +91,8 @@ function clearCollection() {
                                     </div>
                                     <div class="layui-col-xs3">
                                         <div class="text-center center-item"><input type="text" lay-affix="clear"
-                                                placeholder="http://abc.def:1234/xxx" class="layui-input"
-                                                style="caret-color: black;"></div>
+                                                placeholder="abc.def:1234/xxx" class="layui-input"
+                                                style="caret-color: black;" v-model="item.address"></div>
                                     </div>
                                     <div class="layui-col-xs3">
                                         <div class="text-center center-item">{{ item.status }}</div>
@@ -75,7 +100,7 @@ function clearCollection() {
                                     <div class="layui-col-xs3">
                                         <div class="text-center center-item">
                                             <button type="button"
-                                                class="layui-btn layui-btn-primary layui-btn-sm">服务端Ping</button>
+                                                class="layui-btn layui-btn-primary layui-btn-sm" @click="pingAddress(index)">服务端Ping</button>
                                         </div>
                                     </div>
                                 </div>

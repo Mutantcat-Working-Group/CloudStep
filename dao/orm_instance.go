@@ -65,7 +65,7 @@ func initModes() {
 	// 获得集合与对应url集
 	collection.MWorkCllection.Lock()
 	defer collection.MWorkCllection.Unlock()
-	collections := getAllCollections()
+	collections := GetAllCollections()
 	// 遍历集合表
 	for _, one := range collections {
 		// 获得集合的所有url并存入 WorkCollection
