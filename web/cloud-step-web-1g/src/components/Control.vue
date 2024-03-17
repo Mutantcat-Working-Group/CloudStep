@@ -66,7 +66,8 @@ function pingAddress(newindex:any){
             <div class="layui-tab-content" style="height:95%;overflow:auto;">
                 <div class="layui-tab-item layui-show">
                     <div class="collection">
-                        <h2 class="control">添加映射集</h2>
+                        <h2 class="info">映射集列表</h2>
+                        <h2 class="control">新建映射集</h2>
                         <div class="member">
                             <div style="width:100%">
                                 <div class="layui-row">
@@ -118,11 +119,12 @@ function pingAddress(newindex:any){
                             </div>
                             <input type="text" placeholder="映射集的唯一标识" class="layui-input" style="caret-color: black;" v-model="addCollectionsName"/>
                             <div class="layui-input-suffix">
-                                <button class="layui-btn layui-btn-primary">添加映射集</button>
-                                <button class="layui-btn layui-btn-primary" @click="clearCollection()">重置映射集</button>
+                                <button class="layui-btn layui-btn-primary">添加此映射集</button>
+                                <button class="layui-btn layui-btn-primary">Ping全部</button>
+                                <button class="layui-btn layui-btn-primary">移除无效项</button>
+                                <button class="layui-btn layui-btn-primary" @click="clearCollection()">重置</button>
                             </div>
                         </div>
-                        <h2 class="info">映射集列表</h2>
                     </div>
                 </div>
                 <div class="layui-tab-item">
