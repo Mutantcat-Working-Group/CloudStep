@@ -10,3 +10,16 @@ func GetAllCollections() []entity.Collection {
 	}
 	return collections
 }
+
+// 检查集合名是否存在
+func CheckCollectionNameExist(name string) bool {
+	count, err := PublicEngine.Where("name = ?", name).Count(&entity.Collection{})
+	if err != nil {
+		return false
+	}
+	return count > 0
+}
+
+func AddCollection(collectionName string, urls []entity.Url) bool {
+	return true
+}

@@ -69,7 +69,7 @@ func initModes() {
 	// 遍历集合表
 	for _, one := range collections {
 		// 获得集合的所有url并存入 WorkCollection
-		collection.WorkCllection[one.Name] = getUrlsByParent(one.Name)
+		collection.WorkCllection[one.Name] = GetUrlsByParent(one.Name)
 	}
 
 	// 获得自助模式列表
