@@ -16,18 +16,21 @@ func ChangePassword(password string) bool {
 	session := PublicEngine.NewSession()
 	defer session.Close()
 	user := entity.User{}
-	_, err := PublicEngine.Where("username = ?", "admin96").Get(&user)
+	_, err := session.Where("username = ?", "admin96").Get(&user)
 	if err != nil {
+		session.Rollback()
 		return false
 	}
 	user.Password = password
-	_, err = PublicEngine.Where("username = ?", "admin96").Update(&user)
+	_, err = session.Where("username = ?", "admin96").Update(&user)
 	if err != nil {
+		session.Rollback()
 		return false
 	}
 
 	err = session.Commit()
 	if err != nil {
+		session.Rollback()
 		return false
 	}
 	return true
