@@ -103,6 +103,18 @@ func addCollection(c *gin.Context) {
 		})
 		return
 	}
+	// 添加成功的入口
+	if dao.AddCollection(col.Name, col.Urls) {
+		c.JSON(200, gin.H{
+			"code": 0,
+			"msg":  "success",
+		})
+		return
+	}
+	c.JSON(200, gin.H{
+		"code": 1,
+		"msg":  "error",
+	})
 }
 
 func deleteCollection(c *gin.Context) {

@@ -15,8 +15,12 @@ func CheckUser(username string, password string) bool {
 func ChangePassword(password string) bool {
 	session := PublicEngine.NewSession()
 	defer session.Close()
+	err := session.Begin()
+	if err != nil {
+		return false
+	}
 	user := entity.User{}
-	_, err := session.Where("username = ?", "admin96").Get(&user)
+	_, err = session.Where("username = ?", "admin96").Get(&user)
 	if err != nil {
 		session.Rollback()
 		return false

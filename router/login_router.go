@@ -20,6 +20,7 @@ func (router *LoginRouter) PrepareRouter() error {
 func (router *LoginRouter) InitRouter(context *gin.Engine) error {
 	context.POST("/login", login)
 	context.GET("/check", LoginHandler(), checkLogin)
+	context.POST("/change", LoginHandler(), change)
 	return nil
 }
 
@@ -96,4 +97,32 @@ func checkLogin(c *gin.Context) {
 		"code": 0,
 		"msg":  "已登录",
 	})
+}
+
+func change(c *gin.Context) {
+	type info struct {
+		Password string `json:"password"`
+	}
+
+	var body info
+	if c.ShouldBindJSON(&body) != nil {
+		c.JSON(200, gin.H{
+			"code": 1,
+			"msg":  "参数错误",
+		})
+		return
+	}
+
+	if dao.ChangePassword(body.Password) {
+		c.JSON(200, gin.H{
+			"code": 0,
+			"msg":  "修改成功",
+		})
+		token = util.RandToken(8)
+	} else {
+		c.JSON(200, gin.H{
+			"code": 1,
+			"msg":  "修改失败",
+		})
+	}
 }

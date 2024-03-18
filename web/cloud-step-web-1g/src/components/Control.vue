@@ -52,6 +52,23 @@ function pingAddress(newindex:any){
 
 }
 
+// Ping全部
+function pingAllAddress() {
+    for (let index = 0; index < addCollections.value.length; index++) {
+        pingAddress(index)
+    }
+}
+
+// 移除无效项 （空项和ping结果为'Ping失败'和'timeout'的）
+function removeInvalidItem() {
+    for (let index = 0; index < addCollections.value.length; index++) {
+        if (addCollections.value[index].address === "" || addCollections.value[index].status === "Ping失败" || addCollections.value[index].status === "timeout") {
+            addCollections.value.splice(index, 1)
+            index--
+        }
+    }
+}
+
 </script>
 
 <template>
@@ -120,8 +137,8 @@ function pingAddress(newindex:any){
                             <input type="text" placeholder="映射集的唯一标识" class="layui-input" style="caret-color: black;" v-model="addCollectionsName"/>
                             <div class="layui-input-suffix">
                                 <button class="layui-btn layui-btn-primary">添加此映射集</button>
-                                <button class="layui-btn layui-btn-primary">Ping全部</button>
-                                <button class="layui-btn layui-btn-primary">移除无效项</button>
+                                <button class="layui-btn layui-btn-primary" @click="pingAllAddress()">Ping全部</button>
+                                <button class="layui-btn layui-btn-primary" @click="removeInvalidItem()">移除无效项</button>
                                 <button class="layui-btn layui-btn-primary" @click="clearCollection()">重置</button>
                             </div>
                         </div>
