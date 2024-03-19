@@ -41,7 +41,7 @@ func AddUrl(parent string, url string) bool {
 	// 添加url
 	newUrl := entity.Url{}
 	newUrl.Parent = parent
-	newUrl.Url = url
+	newUrl.Path = url
 	_, err = session.Insert(&newUrl)
 	if err != nil {
 		session.Rollback()
@@ -67,6 +67,31 @@ func DeleteUrlById(id int) bool {
 	// 删除url
 	url := entity.Url{}
 	_, err = session.ID(id).Delete(&url)
+	if err != nil {
+		session.Rollback()
+		return false
+	}
+	err = session.Commit()
+	if err != nil {
+		session.Rollback()
+		return false
+	}
+	return true
+}
+
+// 通过id修改url
+func UpdateUrlById(id int, url string) bool {
+	// 开启事务
+	session := PublicEngine.NewSession()
+	defer session.Close()
+	err := session.Begin()
+	if err != nil {
+		return false
+	}
+	// 修改url
+	newUrl := entity.Url{}
+	newUrl.Path = url
+	_, err = session.ID(id).Update(&newUrl)
 	if err != nil {
 		session.Rollback()
 		return false
