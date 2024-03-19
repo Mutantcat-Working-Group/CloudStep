@@ -29,18 +29,51 @@ func GetUrlsByParentId(parentId int) []entity.Url {
 	return urls
 }
 
-func GetUrlById(id int) *entity.Url {
-	url := entity.Url{}
-	_, err := PublicEngine.ID(id).Get(&url)
+// 通过parent和url添加url（事务）
+func AddUrl(parent string, url string) bool {
+	// 开启事务
+	session := PublicEngine.NewSession()
+	defer session.Close()
+	err := session.Begin()
 	if err != nil {
-		return nil
+		return false
 	}
-	return &url
+	// 添加url
+	newUrl := entity.Url{}
+	newUrl.Parent = parent
+	newUrl.Url = url
+	_, err = session.Insert(&newUrl)
+	if err != nil {
+		session.Rollback()
+		return false
+	}
+	err = session.Commit()
+	if err != nil {
+		session.Rollback()
+		return false
+	}
+	return true
 }
 
-func AddUrl(url entity.Url) bool {
-	_, err := PublicEngine.Insert(&url)
+// 通过id删除url （事务）
+func DeleteUrlById(id int) bool {
+	// 开启事务
+	session := PublicEngine.NewSession()
+	defer session.Close()
+	err := session.Begin()
 	if err != nil {
+		return false
+	}
+	// 删除url
+	url := entity.Url{}
+	_, err = session.ID(id).Delete(&url)
+	if err != nil {
+		session.Rollback()
+		return false
+	}
+	err = session.Commit()
+	if err != nil {
+		session.Rollback()
 		return false
 	}
 	return true

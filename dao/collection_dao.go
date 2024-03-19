@@ -97,5 +97,9 @@ func DeleteCollectionById(id int) bool {
 		session.Rollback()
 		return false
 	}
+	// 删除缓存中的集合
+	C.MWorkCllection.Lock()
+	defer C.MWorkCllection.Unlock()
+	delete(C.WorkCllection, collection.Name)
 	return true
 }
