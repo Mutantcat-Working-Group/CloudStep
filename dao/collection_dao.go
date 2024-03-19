@@ -67,3 +67,35 @@ func AddCollection(collectionName string, urls []entity.Url) (bool, int) {
 
 	return true, collection.Id
 }
+
+// 删除集合 （还需要删除parent是这个集合的url）
+func DeleteCollectionById(id int) bool {
+	session := PublicEngine.NewSession()
+	defer session.Close()
+	err := session.Begin()
+	if err != nil {
+		return false
+	}
+	collection := entity.Collection{}
+	_, err = session.ID(id).Get(&collection)
+	if err != nil {
+		session.Rollback()
+		return false
+	}
+	_, err = session.ID(id).Delete(&collection)
+	if err != nil {
+		session.Rollback()
+		return false
+	}
+	_, err = session.Where("parent = ?", collection.Name).Delete(&entity.Url{})
+	if err != nil {
+		session.Rollback()
+		return false
+	}
+	err = session.Commit()
+	if err != nil {
+		session.Rollback()
+		return false
+	}
+	return true
+}

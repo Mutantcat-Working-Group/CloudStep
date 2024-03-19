@@ -19,20 +19,19 @@ func (router *SettingRouter) InitRouter(context *gin.Engine) error {
 	context.GET("/collection/getall", LoginHandler(), getAllCollection)
 	context.GET("/collection/geturls", LoginHandler(), getAllCollectionUrls)
 	context.POST("/collection/add", LoginHandler(), addCollection)
-	context.POST("/collection/update", LoginHandler(), updateCollection)
 	context.GET("/collection/delete", LoginHandler(), deleteCollection)
 	// 链接的操作
-	context.POST("/url/add", LoginHandler(), updateCollection)
-	context.POST("/url/update", LoginHandler(), updateCollection)
-	context.GET("/url/delete", LoginHandler(), updateCollection)
+	context.POST("/url/add", LoginHandler(), deleteCollection)
+	context.POST("/url/update", LoginHandler(), deleteCollection)
+	context.GET("/url/delete", LoginHandler(), deleteCollection)
 	// 自助的操作
-	context.POST("/selfhelp/add", LoginHandler(), updateCollection)
-	context.POST("/selfhelp/update", LoginHandler(), updateCollection)
-	context.GET("/selfhelp/delete", LoginHandler(), updateCollection)
+	context.POST("/selfhelp/add", LoginHandler(), deleteCollection)
+	context.POST("/selfhelp/update", LoginHandler(), deleteCollection)
+	context.GET("/selfhelp/delete", LoginHandler(), deleteCollection)
 	// 代理的操作
-	context.POST("/proxy/add", LoginHandler(), updateCollection)
-	context.POST("/proxy/update", LoginHandler(), updateCollection)
-	context.GET("/proxy/delete", LoginHandler(), updateCollection)
+	context.POST("/proxy/add", LoginHandler(), deleteCollection)
+	context.POST("/proxy/update", LoginHandler(), deleteCollection)
+	context.GET("/proxy/delete", LoginHandler(), deleteCollection)
 	return nil
 }
 
@@ -133,9 +132,33 @@ func addCollection(c *gin.Context) {
 }
 
 func deleteCollection(c *gin.Context) {
-
-}
-
-func updateCollection(c *gin.Context) {
-
+	id := c.Query("id")
+	if id == "" {
+		c.JSON(200, gin.H{
+			"code": 1,
+			"msg":  "error",
+		})
+		return
+	}
+	idInt, err := strconv.Atoi(id)
+	if err != nil {
+		c.JSON(200, gin.H{
+			"code": 1,
+			"msg":  "error",
+		})
+		return
+	}
+	b := dao.DeleteCollectionById(idInt)
+	if b {
+		c.JSON(200, gin.H{
+			"code": 0,
+			"msg":  "success",
+		})
+		return
+	} else {
+		c.JSON(200, gin.H{
+			"code": 1,
+			"msg":  "error",
+		})
+	}
 }

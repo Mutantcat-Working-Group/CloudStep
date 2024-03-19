@@ -120,6 +120,12 @@ function addCollectionsF() {
     ).then((res) => {
         if (res.data.code === 0) {
             alert('添加映射集成功。')
+            allCollections.value.push(
+                {
+                    Id: res.data.id,
+                    Name: addCollectionsName.value
+                }
+            )
             clearCollection()
         } else if (res.data.code === 3) {
             alert('映射集名称已存在。')
@@ -209,7 +215,45 @@ function pingUrls() {
     }
 }
 
+function deleteCollection(){
+    if (selectedCollectionId.value == '') {
+        alert('请选择映射集。')
+        return
+    }
+    // 显示确认框
+    if (!confirm('确定删除映射集吗？')) {
+        return
+    }
+    request.request<any>(
+        {
+            url: '../collection/delete',
+            method: 'GET',
+            params:{
+                id: selectedCollectionId.value
+            },
+            headers: {
+                "Token": window.sessionStorage.getItem('token')
+            }
+        }
+    ).then((res) => {
+        if (res.data.code === 0) {
+            alert('删除映射集成功。')
+            for (let index = 0; index < allCollections.value.length; index++) {
+                if (allCollections.value[index].Id == selectedCollectionId.value) {
+                    allCollections.value.splice(index, 1)
+                    break
+                }
+            }
+            selectedCollectionId.value = ""
+            onSelcetdCollectionChange()
+        } else {
+            alert('删除映射集失败。')
+        }
+    }).catch(() => {
+        alert('删除映射集失败。')
+    });
 
+}
 
 </script>
 
@@ -287,11 +331,10 @@ function pingUrls() {
                             <div class="layui-input-suffix">
                                 <button class="layui-btn layui-btn-primary">添加链接</button>
                                 <button class="layui-btn layui-btn-primary" @click="pingUrls()">Ping全部</button>
-                                <button class="layui-btn layui-btn-primary" @click="">移除无效项</button>
-                                <button class="layui-btn layui-btn-primary" @click="">启用全部</button>
+                                <!-- <button class="layui-btn layui-btn-primary" @click="">启用全部</button> -->
                                 <button class="layui-btn layui-btn-primary"
                                     @click="onSelcetdCollectionChange()">刷新</button>
-                                <button class="layui-btn layui-btn-primary" @click="">删除映射集</button>
+                                <button class="layui-btn layui-btn-primary" @click="deleteCollection()">删除映射集</button>
                             </div>
                         </div>
                         <h2 class="control">新建映射集</h2>

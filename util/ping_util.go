@@ -9,13 +9,6 @@ import (
 )
 
 func GetTCPSpeed(url string) string {
-	// 如果带路径的话 需要去掉路径 例如abc.xxx:80/def 则需要变为abc.xx:80
-	if strings.Contains(url, "/") {
-		ipp := urlToIPP(url)
-		if ipp != "" {
-			url = ipp
-		}
-	}
 	timeout := time.Duration(5 * time.Second)
 	start := time.Now()
 	_, err := net.DialTimeout("tcp", url, timeout)

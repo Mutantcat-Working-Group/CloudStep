@@ -41,7 +41,6 @@ func ping(c *gin.Context) {
 		})
 		return
 	}
-
 	c.JSON(200, gin.H{
 		"code": 0,
 		"msg":  "pong",
