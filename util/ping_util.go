@@ -9,14 +9,6 @@ import (
 )
 
 func GetTCPSpeed(url string) string {
-	// 如果是http://abc.xx 这种形式 则需要自动变为abc.xx:80
-	if url[:7] == "http://" {
-		url = url[7:] + ":80"
-	}
-	// 如果是https://abc.xx 这种形式 则需要自动变为abc.xx:443
-	if url[:8] == "https://" {
-		url = url[8:] + ":443"
-	}
 	// 如果带路径的话 需要去掉路径 例如abc.xxx:80/def 则需要变为abc.xx:80
 	if strings.Contains(url, "/") {
 		ipp := urlToIPP(url)

@@ -120,6 +120,7 @@ function addCollectionsF() {
     ).then((res) => {
         if (res.data.code === 0) {
             alert('添加映射集成功。')
+            clearCollection()
         } else if (res.data.code === 3) {
             alert('映射集名称已存在。')
         }

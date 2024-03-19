@@ -117,10 +117,12 @@ func addCollection(c *gin.Context) {
 		return
 	}
 	// 添加成功的入口
-	if dao.AddCollection(col.Name, col.Urls) {
+	b, i := dao.AddCollection(col.Name, col.Urls)
+	if b {
 		c.JSON(200, gin.H{
 			"code": 0,
 			"msg":  "success",
+			"id":   i,
 		})
 		return
 	}

@@ -23,20 +23,20 @@ func CheckCollectionNameExist(name string) bool {
 	return count > 0
 }
 
-func AddCollection(collectionName string, urls []entity.Url) bool {
+func AddCollection(collectionName string, urls []entity.Url) (bool, int) {
 	// 开启事务
 	session := PublicEngine.NewSession()
 	defer session.Close()
 	err := session.Begin()
 	if err != nil {
-		return false
+		return false, 0
 	}
 	collection := entity.Collection{}
 	collection.Name = collectionName
 	_, err = session.Insert(&collection)
 	if err != nil {
 		session.Rollback()
-		return false
+		return false, 0
 	}
 	for _, url := range urls {
 		url.Parent = collectionName
@@ -45,17 +45,25 @@ func AddCollection(collectionName string, urls []entity.Url) bool {
 		_, err = session.Insert(&url)
 		if err != nil {
 			session.Rollback()
-			return false
+			return false, 0
 		}
 	}
 	err = session.Commit()
 	if err != nil {
 		session.Rollback()
-		return false
+		return false, 0
 	}
 	// 数据库中添加无误之后 添加进缓存中
 	C.MWorkCllection.Lock()
 	defer C.MWorkCllection.Unlock()
 	C.WorkCllection[collection.Name] = urls
-	return true
+
+	// 获得刚才添加的集合的id
+	collection = entity.Collection{}
+	_, err = PublicEngine.Where("name = ?", collectionName).Get(&collection)
+	if err != nil {
+		return false, 0
+	}
+
+	return true, collection.Id
 }
