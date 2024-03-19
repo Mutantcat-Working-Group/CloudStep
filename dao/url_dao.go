@@ -12,6 +12,23 @@ func GetUrlsByParent(parent string) []entity.Url {
 	return urls
 }
 
+// 通过parentid获得urls
+func GetUrlsByParentId(parentId int) []entity.Url {
+	urls := make([]entity.Url, 0)
+	// 用集合id查询集合名
+	parent := entity.Collection{}
+	_, err := PublicEngine.ID(parentId).Get(&parent)
+	if err != nil {
+		return nil
+	}
+	// 用集合名查询urls
+	err = PublicEngine.Where("parent = ?", parent.Name).Find(&urls)
+	if err != nil {
+		return nil
+	}
+	return urls
+}
+
 func GetUrlById(id int) *entity.Url {
 	url := entity.Url{}
 	_, err := PublicEngine.ID(id).Get(&url)

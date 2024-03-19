@@ -1,6 +1,9 @@
 package dao
 
-import "com.mutantcat.cloud_step/entity"
+import (
+	C "com.mutantcat.cloud_step/collection"
+	"com.mutantcat.cloud_step/entity"
+)
 
 func GetAllCollections() []entity.Collection {
 	collections := make([]entity.Collection, 0)
@@ -37,6 +40,8 @@ func AddCollection(collectionName string, urls []entity.Url) bool {
 	}
 	for _, url := range urls {
 		url.Parent = collectionName
+		url.Alive = true
+		url.Retry = 0
 		_, err = session.Insert(&url)
 		if err != nil {
 			session.Rollback()
@@ -48,5 +53,9 @@ func AddCollection(collectionName string, urls []entity.Url) bool {
 		session.Rollback()
 		return false
 	}
+	// 数据库中添加无误之后 添加进缓存中
+	C.MWorkCllection.Lock()
+	defer C.MWorkCllection.Unlock()
+	C.WorkCllection[collection.Name] = urls
 	return true
 }

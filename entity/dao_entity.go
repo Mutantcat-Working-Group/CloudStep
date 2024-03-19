@@ -27,11 +27,11 @@ type SelfHelp struct {
 
 // 路径
 type Url struct {
-	Id     int    `xorm:"pk autoincr"` // id
-	Parent string `xorm:"varchar(200) notnull"`
-	Path   string `xorm:"varchar(200) notnull"` // 路径
-	Alive  bool   `xorm:"notnull"`              // 是否存活
-	Retry  int    `xorm:"notnull"`              // 重试次数
+	Id     int    `xorm:"pk autoincr" json:"id"` // id
+	Parent string `xorm:"varchar(200) notnull" json:"parent"`
+	Path   string `xorm:"varchar(200) notnull" json:"address"` // 路径
+	Alive  bool   `xorm:"notnull" json:"alive"`                // 是否存活
+	Retry  int    `xorm:"notnull" json:"retry"`                // 重试次数
 }
 
 type User struct {

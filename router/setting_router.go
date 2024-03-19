@@ -15,11 +15,24 @@ func (router *SettingRouter) PrepareRouter() error {
 }
 
 func (router *SettingRouter) InitRouter(context *gin.Engine) error {
+	// 集合的操作
 	context.GET("/collection/getall", LoginHandler(), getAllCollection)
 	context.GET("/collection/geturls", LoginHandler(), getAllCollectionUrls)
-	context.GET("/collection/add", addCollection)
+	context.POST("/collection/add", LoginHandler(), addCollection)
+	context.POST("/collection/update", LoginHandler(), updateCollection)
 	context.GET("/collection/delete", LoginHandler(), deleteCollection)
-	context.GET("/collection/update", LoginHandler(), updateCollection)
+	// 链接的操作
+	context.POST("/url/add", LoginHandler(), updateCollection)
+	context.POST("/url/update", LoginHandler(), updateCollection)
+	context.GET("/url/delete", LoginHandler(), updateCollection)
+	// 自助的操作
+	context.POST("/selfhelp/add", LoginHandler(), updateCollection)
+	context.POST("/selfhelp/update", LoginHandler(), updateCollection)
+	context.GET("/selfhelp/delete", LoginHandler(), updateCollection)
+	// 代理的操作
+	context.POST("/proxy/add", LoginHandler(), updateCollection)
+	context.POST("/proxy/update", LoginHandler(), updateCollection)
+	context.GET("/proxy/delete", LoginHandler(), updateCollection)
 	return nil
 }
 
@@ -60,7 +73,7 @@ func getAllCollectionUrls(c *gin.Context) {
 		})
 		return
 	}
-	urls := dao.GetUrlById(idInt)
+	urls := dao.GetUrlsByParentId(idInt)
 	if urls == nil {
 		c.JSON(200, gin.H{
 			"code": 1,

@@ -1,6 +1,30 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import request from '../utils/request'
+
+onMounted(() => {
+    // 获得映射集列表
+    request.request<any>(
+        {
+            url: '/collection/getall',
+            method: 'get',
+            headers: {
+                "Token": window.sessionStorage.getItem('token')
+            }
+        }
+    ).then((res) => {
+        if (res.data.code === 0) {
+            allCollections.value = res.data.data
+        } else {
+            alert('获取映射集失败。')
+        }
+    }).catch(() => {
+        alert('获取映射集失败。')
+    });
+
+})
+
+//（一）添加映射集操作
 
 const addCollections = ref([{
     address: "",
@@ -28,7 +52,7 @@ function clearCollection() {
     addCollectionsName.value = ""
 }
 
-function pingAddress(newindex:any){
+function pingAddress(newindex: any) {
     request.request<any>(
         {
             url: '../ping',
@@ -62,12 +86,129 @@ function pingAllAddress() {
 // 移除无效项 （空项和ping结果为'Ping失败'和'timeout'的）
 function removeInvalidItem() {
     for (let index = 0; index < addCollections.value.length; index++) {
-        if (addCollections.value[index].address === "" || addCollections.value[index].status === "Ping失败" || addCollections.value[index].status === "timeout") {
+        if (addCollections.value[index].address === "") {
             addCollections.value.splice(index, 1)
             index--
         }
     }
 }
+
+// 添加映射集
+function addCollectionsF() {
+    if (addCollectionsName.value === "") {
+        alert('映射集名称不能为空。')
+        return
+    }
+    // 先清空无效项
+    removeInvalidItem()
+    if (addCollections.value.length === 0) {
+        alert('有效映射集内容不能为空。')
+        return
+    }
+    request.request<any>(
+        {
+            url: '../collection/add',
+            method: 'post',
+            data: {
+                name: addCollectionsName.value,
+                urls: addCollections.value
+            },
+            headers: {
+                "Token": window.sessionStorage.getItem('token')
+            }
+        }
+    ).then((res) => {
+        if (res.data.code === 0) {
+            alert('添加映射集成功。')
+        } else if (res.data.code === 3) {
+            alert('映射集名称已存在。')
+        }
+        else {
+            alert('添加映射集失败。')
+        }
+    }).catch(() => {
+        alert('添加映射集失败。')
+    });
+}
+
+//（二）管理已有映射集操作
+
+// 当前后台的所有映射集
+const allCollections: any = ref([])
+
+// 当前选择的映射集id
+const selectedCollectionId: any = ref("")
+
+// 当前选择的映射集中的成员
+const allGetedUrls: any = ref([{
+    address: "未选择映射集",
+    status: "未知"
+}])
+
+// 新添加的url
+const newUrl: any = ref("")
+
+function onSelcetdCollectionChange() {
+    if (selectedCollectionId.value == '') {
+        allGetedUrls.value = [{
+            address: "未选择",
+            status: "未知"
+        }]
+        selectedCollectionId.value = ""
+        return
+    }
+    request.request<any>(
+        {
+            url: '/collection/geturls',
+            method: 'get',
+            params: {
+                id: selectedCollectionId.value
+            },
+            headers: {
+                "Token": window.sessionStorage.getItem('token')
+            }
+        }
+    ).then((res) => {
+        if (res.data.code === 0) {
+            allGetedUrls.value = res.data.data
+        } else {
+            alert('获取映射集内容失败。')
+        }
+    }).catch(() => {
+        alert('获取映射集内容失败。')
+    });
+}
+
+function pingUrl(index: any) {
+    request.request<any>(
+        {
+            url: '../ping',
+            method: 'post',
+            data: {
+                url: allGetedUrls.value[index].address
+            },
+            headers: {
+                "Token": window.sessionStorage.getItem('token')
+            }
+        }
+    ).then((res) => {
+        if (res.data.code === 0) {
+            allGetedUrls.value[index].status = res.data.ms
+        } else {
+            allGetedUrls.value[index].status = "Ping失败"
+        }
+    }).catch(() => {
+        allGetedUrls.value[index].status = "Ping失败"
+    });
+}
+
+function pingUrls() {
+    for (let index = 0; index < allGetedUrls.value.length; index++) {
+        pingUrl(index)
+    }
+}
+
+
 
 </script>
 
@@ -84,6 +225,74 @@ function removeInvalidItem() {
                 <div class="layui-tab-item layui-show">
                     <div class="collection">
                         <h2 class="info">映射集列表</h2>
+                        当前映射集：
+                        <select v-model="selectedCollectionId" @change="onSelcetdCollectionChange">
+                            <option value="">请选择</option>
+                            <option v-for="(item, index) in allCollections" :key="index" :value="item.Id">{{ item.Name
+                                }}
+                            </option>
+                        </select>
+                        <div class="member">
+                            <div style="width:100%">
+                                <div class="layui-row">
+                                    <div class="layui-col-xs3">
+                                        <div class="text-center bigger-text">序号</div>
+                                    </div>
+                                    <div class="layui-col-xs3">
+                                        <div class="text-center bigger-text">地址</div>
+                                    </div>
+                                    <div class="layui-col-xs3">
+                                        <div class="text-center bigger-text">延迟</div>
+                                    </div>
+                                    <div class="layui-col-xs3">
+                                        <div class="text-center bigger-text">操作</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="items" style="width:100%" v-for="(item, index) in allGetedUrls" :key="index">
+                                <div class="layui-row">
+                                    <div class="layui-col-xs3">
+                                        <div class="text-center center-item">{{ index + 1 }}</div>
+                                    </div>
+                                    <div class="layui-col-xs3">
+                                        <div class="text-center center-item"><input type="text" lay-affix="clear"
+                                                placeholder="abc.def:1234/xxx" class="layui-input"
+                                                style="caret-color: black;" v-model="item.address"></div>
+                                    </div>
+                                    <div class="layui-col-xs3">
+                                        <div class="text-center center-item">{{ item.status == undefined ? "未知" :
+                            item.status
+                                            }}</div>
+                                    </div>
+                                    <div class="layui-col-xs3">
+                                        <div class="text-center center-item">
+                                            <button type="button" class="layui-btn layui-btn-primary layui-btn-sm"
+                                                @click="pingUrl(index)">提交修改</button>
+                                            <button type="button" class="layui-btn layui-btn-primary layui-btn-sm"
+                                                @click="pingUrl(index)">服务端Ping</button>
+                                            <button type="button" class="layui-btn layui-btn-primary layui-btn-sm"
+                                                @click="pingUrl(index)">删除</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="layui-input-group center" style="margin-top:5px;">
+                            <div class="layui-input-split layui-input-prefix">
+                                新链接地址
+                            </div>
+                            <input type="text" placeholder="abc.def:1234/xxx" class="layui-input"
+                                style="caret-color: black;" v-model="newUrl" />
+                            <div class="layui-input-suffix">
+                                <button class="layui-btn layui-btn-primary">添加链接</button>
+                                <button class="layui-btn layui-btn-primary" @click="pingUrls()">Ping全部</button>
+                                <button class="layui-btn layui-btn-primary" @click="">移除无效项</button>
+                                <button class="layui-btn layui-btn-primary" @click="">启用全部</button>
+                                <button class="layui-btn layui-btn-primary"
+                                    @click="onSelcetdCollectionChange()">刷新</button>
+                                <button class="layui-btn layui-btn-primary" @click="">删除映射集</button>
+                            </div>
+                        </div>
                         <h2 class="control">新建映射集</h2>
                         <div class="member">
                             <div style="width:100%">
@@ -117,8 +326,8 @@ function removeInvalidItem() {
                                     </div>
                                     <div class="layui-col-xs3">
                                         <div class="text-center center-item">
-                                            <button type="button"
-                                                class="layui-btn layui-btn-primary layui-btn-sm" @click="pingAddress(index)">服务端Ping</button>
+                                            <button type="button" class="layui-btn layui-btn-primary layui-btn-sm"
+                                                @click="pingAddress(index)">服务端Ping</button>
                                         </div>
                                     </div>
                                 </div>
@@ -130,13 +339,14 @@ function removeInvalidItem() {
                                     style="float:right;">增加</button>
                             </div>
                         </div>
-                        <div class="layui-input-group center">
+                        <div class="layui-input-group center" style="margin-top:5px;">
                             <div class="layui-input-split layui-input-prefix">
                                 映射集名称
                             </div>
-                            <input type="text" placeholder="映射集的唯一标识" class="layui-input" style="caret-color: black;" v-model="addCollectionsName"/>
+                            <input type="text" placeholder="映射集的唯一标识" class="layui-input" style="caret-color: black;"
+                                v-model="addCollectionsName" />
                             <div class="layui-input-suffix">
-                                <button class="layui-btn layui-btn-primary">添加此映射集</button>
+                                <button class="layui-btn layui-btn-primary" @click="addCollectionsF()">添加此映射集</button>
                                 <button class="layui-btn layui-btn-primary" @click="pingAllAddress()">Ping全部</button>
                                 <button class="layui-btn layui-btn-primary" @click="removeInvalidItem()">移除无效项</button>
                                 <button class="layui-btn layui-btn-primary" @click="clearCollection()">重置</button>

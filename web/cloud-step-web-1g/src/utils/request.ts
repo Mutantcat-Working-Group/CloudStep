@@ -43,7 +43,7 @@ class Request {
 }
 
 const request = new Request({
-    timeout: 1000, // 设置请求超时时间
+    timeout: 2000, // 设置请求超时时间
     headers: { 'Content-Type': 'application/json;charset=utf-8' } // 设置自定义请求头
 });
 
