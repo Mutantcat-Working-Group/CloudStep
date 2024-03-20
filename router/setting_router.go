@@ -21,9 +21,9 @@ func (router *SettingRouter) InitRouter(context *gin.Engine) error {
 	context.POST("/collection/add", LoginHandler(), addCollection)
 	context.GET("/collection/delete", LoginHandler(), deleteCollection)
 	// 链接的操作
-	context.POST("/url/add", LoginHandler(), deleteCollection)
-	context.POST("/url/update", LoginHandler(), deleteCollection)
-	context.GET("/url/delete", LoginHandler(), deleteCollection)
+	context.POST("/url/add", LoginHandler(), addUrl)
+	context.POST("/url/update", LoginHandler(), updateUrl)
+	context.GET("/url/delete", LoginHandler(), deleteUrl)
 	// 自助的操作
 	context.POST("/selfhelp/add", LoginHandler(), deleteCollection)
 	context.POST("/selfhelp/update", LoginHandler(), deleteCollection)
@@ -149,6 +149,118 @@ func deleteCollection(c *gin.Context) {
 		return
 	}
 	b := dao.DeleteCollectionById(idInt)
+	if b {
+		c.JSON(200, gin.H{
+			"code": 0,
+			"msg":  "success",
+		})
+		return
+	} else {
+		c.JSON(200, gin.H{
+			"code": 1,
+			"msg":  "error",
+		})
+	}
+}
+
+func addUrl(c *gin.Context) {
+	type Url struct {
+		Parent int    `json:"parent"`
+		Path   string `json:"address"`
+	}
+	var url Url
+	err := c.ShouldBindJSON(&url)
+	if err != nil {
+		c.JSON(200, gin.H{
+			"code": 1,
+			"msg":  "error",
+			"data": Url{Path: "null", Parent: 0},
+		})
+		return
+	}
+	name := dao.GetCollectionNameById(url.Parent)
+	if !dao.CheckCollectionNameExist(name) {
+		c.JSON(200, gin.H{
+			"code": 2,
+			"msg":  "parent not exist",
+		})
+		return
+	}
+	if url.Path == "" {
+		c.JSON(200, gin.H{
+			"code": 1,
+			"msg":  "error",
+		})
+		return
+	}
+	b := dao.AddUrl(name, url.Path)
+	if b {
+		c.JSON(200, gin.H{
+			"code": 0,
+			"msg":  "success",
+		})
+		return
+	} else {
+		c.JSON(200, gin.H{
+			"code": 1,
+			"msg":  "error",
+		})
+		return
+	}
+
+}
+
+func updateUrl(c *gin.Context) {
+	var url entity.Url
+	err := c.ShouldBindJSON(&url)
+	if err != nil {
+		c.JSON(200, gin.H{
+			"code": 1,
+			"msg":  "error",
+		})
+		return
+	}
+	if url.Path == "" {
+		c.JSON(200, gin.H{
+			"code": 1,
+			"msg":  "error",
+		})
+		return
+	}
+	b := dao.UpdateUrlById(url.Id, url.Path)
+	if b {
+		c.JSON(200, gin.H{
+			"code": 0,
+			"msg":  "success",
+		})
+		return
+	} else {
+		c.JSON(200, gin.H{
+			"code": 1,
+			"msg":  "error",
+		})
+		return
+	}
+}
+
+func deleteUrl(c *gin.Context) {
+	id := c.Query("id")
+	if id == "" {
+		c.JSON(200, gin.H{
+			"code": 1,
+			"msg":  "error",
+		})
+		return
+	}
+	idInt, err := strconv.Atoi(id)
+	if err != nil {
+		c.JSON(200, gin.H{
+			"code": 1,
+			"msg":  "error",
+		})
+		return
+	}
+	b := dao.DeleteUrlById(idInt)
 	if b {
 		c.JSON(200, gin.H{
 			"code": 0,

@@ -1,6 +1,9 @@
 package dao
 
-import "com.mutantcat.cloud_step/entity"
+import (
+	"com.mutantcat.cloud_step/collection"
+	"com.mutantcat.cloud_step/entity"
+)
 
 // 获得Parent为某个集合的url
 func GetUrlsByParent(parent string) []entity.Url {
@@ -42,6 +45,8 @@ func AddUrl(parent string, url string) bool {
 	newUrl := entity.Url{}
 	newUrl.Parent = parent
 	newUrl.Path = url
+	newUrl.Alive = true
+	newUrl.Retry = 0
 	_, err = session.Insert(&newUrl)
 	if err != nil {
 		session.Rollback()
@@ -52,6 +57,10 @@ func AddUrl(parent string, url string) bool {
 		session.Rollback()
 		return false
 	}
+	// 添加成功过后在缓存中添加
+	collection.MWorkCllection.Lock()
+	defer collection.MWorkCllection.Unlock()
+	collection.WorkCllection[parent] = append(collection.WorkCllection[parent], newUrl)
 	return true
 }
 
@@ -75,6 +84,17 @@ func DeleteUrlById(id int) bool {
 	if err != nil {
 		session.Rollback()
 		return false
+	}
+	// 删除成功后删除缓存中的url
+	collection.MWorkCllection.Lock()
+	defer collection.MWorkCllection.Unlock()
+	for k, v := range collection.WorkCllection {
+		for i, u := range v {
+			if u.Id == id {
+				collection.WorkCllection[k] = append(v[:i], v[i+1:]...)
+				break
+			}
+		}
 	}
 	return true
 }
@@ -100,6 +120,17 @@ func UpdateUrlById(id int, url string) bool {
 	if err != nil {
 		session.Rollback()
 		return false
+	}
+	// 修改成功后修改缓存中的url
+	collection.MWorkCllection.Lock()
+	defer collection.MWorkCllection.Unlock()
+	for k, v := range collection.WorkCllection {
+		for i, u := range v {
+			if u.Id == id {
+				collection.WorkCllection[k][i].Path = url
+				break
+			}
+		}
 	}
 	return true
 }

@@ -215,7 +215,7 @@ function pingUrls() {
     }
 }
 
-function deleteCollection(){
+function deleteCollection() {
     if (selectedCollectionId.value == '') {
         alert('请选择映射集。')
         return
@@ -228,7 +228,7 @@ function deleteCollection(){
         {
             url: '../collection/delete',
             method: 'GET',
-            params:{
+            params: {
                 id: selectedCollectionId.value
             },
             headers: {
@@ -253,6 +253,108 @@ function deleteCollection(){
         alert('删除映射集失败。')
     });
 
+}
+
+// 修改url
+
+function updateUrl(index:any,address:any){
+    if(
+        address.value == '' ||
+        index.value == '' ||
+        selectedCollectionId.value == ''
+    ){
+        alert('地址不能为空。')
+        return
+    }
+    request.request<any>(
+        {
+            url: '../url/update',
+            method: 'post',
+            data: {
+                id: index.value,
+                address: address.value
+            },
+            headers: {
+                "Token": window.sessionStorage.getItem('token')
+            }
+        }
+    ).then((res) => {
+        if (res.data.code === 0) {
+            alert('修改链接成功。')
+            onSelcetdCollectionChange()
+        } else {
+            alert('修改链接失败。')
+        }
+    }).catch(() => {
+        alert('修改链接失败。')
+    });
+}
+
+// 删除url
+function deleteUrlfromCollection(index: any) {
+    if (!confirm('确定删除链接吗？')) {
+        return
+    }
+    if (selectedCollectionId.value == '') {
+        alert('请选择映射集。')
+        return
+    }
+    request.request<any>(
+        {
+            url: '../url/delete',
+            method: 'GET',
+            params: {
+                id: index.value
+            },
+            headers: {
+                "Token": window.sessionStorage.getItem('token')
+            }
+        }
+    ).then((res) => {
+        if (res.data.code === 0) {
+            alert('删除链接成功。')
+            onSelcetdCollectionChange()
+        } else {
+            alert('删除链接失败。')
+        }
+    }).catch(() => {
+        alert('删除链接失败。')
+    });
+
+}
+
+// 添加url
+function addUrltoCollection() {
+    if (selectedCollectionId.value == '') {
+        alert('请选择映射集。')
+        return
+    }
+    if (newUrl.value == '') {
+        alert('新链接地址不能为空。')
+        return
+    }
+    request.request<any>(
+        {
+            url: '../url/add',
+            method: 'post',
+            data: {
+                "parent": selectedCollectionId.value,
+                "address": newUrl.value
+            },
+            headers: {
+                "Token": window.sessionStorage.getItem('token')
+            }
+        }
+    ).then((res) => {
+        if (res.data.code === 0) {
+            alert('添加链接成功。')
+            onSelcetdCollectionChange()
+        } else {
+            alert('添加链接失败。')
+        }
+    }).catch(() => {
+        alert('添加链接失败。')
+    });
 }
 
 </script>
@@ -312,11 +414,11 @@ function deleteCollection(){
                                     <div class="layui-col-xs3">
                                         <div class="text-center center-item">
                                             <button type="button" class="layui-btn layui-btn-primary layui-btn-sm"
-                                                @click="pingUrl(index)">提交修改</button>
+                                                @click="updateUrl(item.id,item.address)">提交修改</button>
                                             <button type="button" class="layui-btn layui-btn-primary layui-btn-sm"
                                                 @click="pingUrl(index)">服务端Ping</button>
                                             <button type="button" class="layui-btn layui-btn-primary layui-btn-sm"
-                                                @click="pingUrl(index)">删除</button>
+                                                @click="deleteUrlfromCollection(item.id)">删除</button>
                                         </div>
                                     </div>
                                 </div>
@@ -329,7 +431,7 @@ function deleteCollection(){
                             <input type="text" placeholder="abc.def:1234/xxx" class="layui-input"
                                 style="caret-color: black;" v-model="newUrl" />
                             <div class="layui-input-suffix">
-                                <button class="layui-btn layui-btn-primary">添加链接</button>
+                                <button class="layui-btn layui-btn-primary" @click="addUrltoCollection()">添加链接</button>
                                 <button class="layui-btn layui-btn-primary" @click="pingUrls()">Ping全部</button>
                                 <!-- <button class="layui-btn layui-btn-primary" @click="">启用全部</button> -->
                                 <button class="layui-btn layui-btn-primary"

@@ -103,3 +103,12 @@ func DeleteCollectionById(id int) bool {
 	delete(C.WorkCllection, collection.Name)
 	return true
 }
+
+func GetCollectionNameById(id int) string {
+	collection := entity.Collection{}
+	_, err := PublicEngine.ID(id).Get(&collection)
+	if err != nil {
+		return ""
+	}
+	return collection.Name
+}
