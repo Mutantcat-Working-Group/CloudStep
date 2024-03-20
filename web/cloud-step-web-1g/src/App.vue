@@ -21,6 +21,8 @@ function checkLogined(){
       }else{
         logined.value = false
       }
+    }).catch(()=>{
+        logined.value = false
     })
 }
 
@@ -32,7 +34,7 @@ onMounted(()=>{
 
 <template>
   <Login v-if="!logined" @check="checkLogined"/>
-  <Control v-if="logined"/>
+  <Control v-if="logined" @check="checkLogined"/>
 </template>
 
 <style scoped>

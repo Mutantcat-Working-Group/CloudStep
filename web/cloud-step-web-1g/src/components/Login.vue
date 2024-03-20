@@ -13,7 +13,7 @@ function login() {
             method: 'post',
             data: {
                 username: username.value,
-                password: username.value
+                password: password.value
             }
         }
     ).then((res) => {

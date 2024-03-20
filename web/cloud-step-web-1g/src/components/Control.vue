@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted,defineEmits } from 'vue'
 import request from '../utils/request'
+
+const emit = defineEmits(['check'])
 
 onMounted(() => {
     // 获得映射集列表
@@ -258,12 +260,12 @@ function deleteCollection() {
 
 // 修改url
 
-function updateUrl(index:any,address:any){
-    if(
+function updateUrl(index: any, address: any) {
+    if (
         address.value == '' ||
         index.value == '' ||
         selectedCollectionId.value == ''
-    ){
+    ) {
         alert('地址不能为空。')
         return
     }
@@ -358,6 +360,42 @@ function addUrltoCollection() {
     });
 }
 
+//（三）修改密码操作
+
+// 新密码
+const newPassword = ref("")
+
+function changePassword() {
+    if (newPassword.value == '') {
+        alert('新密码不能为空。')
+        return
+    }
+    if (!confirm('确定修改密码吗？')) {
+        return
+    }
+    request.request<any>(
+        {
+            url: '../change',
+            method: 'post',
+            data: {
+                password: newPassword.value
+            },
+            headers: {
+                "Token": window.sessionStorage.getItem('token')
+            }
+        }
+    ).then((res) => {
+        if (res.data.code === 0) {
+            alert('修改密码成功。')
+            emit('check')
+        } else {
+            alert('修改密码失败。')
+        }
+    }).catch(() => {
+        alert('修改密码失败。')
+    });
+}
+
 </script>
 
 <template>
@@ -372,7 +410,7 @@ function addUrltoCollection() {
             <div class="layui-tab-content" style="height:95%;overflow:auto;">
                 <div class="layui-tab-item layui-show">
                     <div class="collection">
-                        <h2 class="info">映射集列表</h2>
+                        <h2 class="info">管理映射集</h2>
                         当前映射集：
                         <select v-model="selectedCollectionId" @change="onSelcetdCollectionChange">
                             <option value="">请选择</option>
@@ -415,7 +453,7 @@ function addUrltoCollection() {
                                     <div class="layui-col-xs3">
                                         <div class="text-center center-item">
                                             <button type="button" class="layui-btn layui-btn-primary layui-btn-sm"
-                                                @click="updateUrl(item.id,item.address)">提交修改</button>
+                                                @click="updateUrl(item.id, item.address)">提交修改</button>
                                             <button type="button" class="layui-btn layui-btn-primary layui-btn-sm"
                                                 @click="pingUrl(index)">服务端Ping</button>
                                             <button type="button" class="layui-btn layui-btn-primary layui-btn-sm"
@@ -505,20 +543,30 @@ function addUrltoCollection() {
                     <div class="collection">
                         <h2 class="control">自助设置</h2>
 
-                        <h2 class="info">映射管理</h2>
+                        <h2 class="info">自助管理</h2>
+
                     </div>
                 </div>
                 <div class="layui-tab-item">
                     <div class="collection">
-                        <h2 class="control">代理管理</h2>
+                        <h2 class="control">代理设置</h2>
 
-                        <h2 class="info">映射管理</h2>
+                        <h2 class="info">代理管理</h2>
                     </div>
                 </div>
                 <div class="layui-tab-item">
                     <div class="collection">
                         <h2 class="control">通用设置</h2>
                         <h2 class="control">密码设置</h2>
+                        <div class="layui-input-group center">
+                            <div class="layui-input-split layui-input-prefix">
+                                新密码
+                            </div>
+                            <input style="caret-color: black;" type="text" placeholder="重置后需要重新登录" class="layui-input" v-model="newPassword">
+                            <div class="layui-input-suffix">
+                                <button class="layui-btn layui-btn-primary" @click="changePassword()">修改密码</button>
+                            </div>
+                        </div>
                         <h2 class="info">关于</h2>
                         <div class="text-center">
                             <p>安全的、高性能的、可独立部署的、代理（反向代理）的、自助代理的、负载均衡的、可持久化的服务地址管理工具。</p>
