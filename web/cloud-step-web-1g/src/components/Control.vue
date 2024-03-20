@@ -156,6 +156,7 @@ const allGetedUrls: any = ref([{
 const newUrl: any = ref("")
 
 function onSelcetdCollectionChange() {
+    newUrl.value = ""
     if (selectedCollectionId.value == '') {
         allGetedUrls.value = [{
             address: "未选择",
@@ -271,8 +272,8 @@ function updateUrl(index:any,address:any){
             url: '../url/update',
             method: 'post',
             data: {
-                id: index.value,
-                address: address.value
+                id: index,
+                address: address
             },
             headers: {
                 "Token": window.sessionStorage.getItem('token')
@@ -304,7 +305,7 @@ function deleteUrlfromCollection(index: any) {
             url: '../url/delete',
             method: 'GET',
             params: {
-                id: index.value
+                id: index
             },
             headers: {
                 "Token": window.sessionStorage.getItem('token')
