@@ -58,7 +58,7 @@
     - 请求方式：任意
     - 请求参数（任何形式携带）：
       - way：自助模式坐标
-      - method：请求方式（GET/POST/PUT/DELETE/...）
+      - method：请求方式（GET/POST）
     - 返回示例：
         ```json
         {
@@ -81,7 +81,8 @@
 - [X] 管理界面（/web）
 - [X] 自助模式（/self）
 - [X] 映射集管理
-- [ ] 代理模式（/proxy）
+- [ ] GET代理模式（/proxy）
+- [ ] POST代理模式（/proxy）
 - [X] 一键从服务器Ping
 - [ ] 空路径默认模式
 - [ ] 一键启动包

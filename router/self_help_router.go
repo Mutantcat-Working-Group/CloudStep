@@ -14,8 +14,8 @@ func (router *SelfHelpRouter) PrepareRouter() error {
 }
 
 func (router *SelfHelpRouter) InitRouter(context *gin.Engine) error {
-	context.Any("/self", proxy)
-	context.Any("/self/:way", proxy)
+	context.Any("/self", selfhelp)
+	context.Any("/self/:way", selfhelp)
 	return nil
 }
 
@@ -23,7 +23,7 @@ func (router *SelfHelpRouter) DestroyRouter() error {
 	return nil
 }
 
-func proxy(c *gin.Context) {
+func selfhelp(c *gin.Context) {
 	way := util.GetWayParam(c)
 	if way == "" {
 		c.JSON(200, gin.H{
