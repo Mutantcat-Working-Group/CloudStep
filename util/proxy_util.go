@@ -3,12 +3,25 @@ package util
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"strings"
 )
 
 func Proxy(targetURL, method string, c *gin.Context) error {
+	// 获取原来请求的所有get参数
+	queryParams := c.Request.URL.Query()
+
+	// 全部赋予到新的请求中
+	targetURL += "?"
+	for key, values := range queryParams {
+		for _, value := range values {
+			targetURL += key + "=" + value + "&"
+		}
+	}
+	targetURL = strings.TrimRight(targetURL, "&")
+
 	// 获取用户请求的请求头
 	userHeaders := c.Request.Header
 
@@ -32,7 +45,7 @@ func Proxy(targetURL, method string, c *gin.Context) error {
 	// 设置请求的 Body（如果是 POST 请求）
 	if method == http.MethodPost {
 		req.Header.Set("Content-Type", "application/json")
-		req.Body = ioutil.NopCloser(strings.NewReader(requestBody))
+		req.Body = io.NopCloser(strings.NewReader(requestBody))
 	}
 
 	// 发送请求

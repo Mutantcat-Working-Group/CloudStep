@@ -12,6 +12,7 @@ func main() {
 	lifecycle.RegisterRouter(gin, &router.WebRouter{},
 		&router.LoginRouter{},
 		&router.SelfHelpRouter{},
+		&router.ProxyRouter{},
 		&router.PingRouter{},
 		&router.SettingRouter{},
 	)
