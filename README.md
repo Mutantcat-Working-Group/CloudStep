@@ -64,7 +64,7 @@
         {
             "code": 0,
             "msg": "success",
-            "data": "result",
+            "data": (代理请求结果),
             "way": "abc"
         }
         ```
