@@ -12,6 +12,9 @@ import (
 func Proxy(targetURL, method string, c *gin.Context) error {
 	// 获取原来请求的所有get参数
 	queryParams := c.Request.URL.Query()
+	// 若指定为get模式 则将原本post参数也赋予到get参数中
+
+	// 若指定为post模式 则将原本get参数也赋予到post参数中
 
 	// 全部赋予到新的请求中
 	targetURL += "?"
