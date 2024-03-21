@@ -8,16 +8,17 @@ import (
 	"time"
 )
 
-func GetTCPSpeed(url string) string {
-	timeout := time.Duration(5 * time.Second)
+func GetTCPSpeed(url string, resultChan chan string) {
+	timeout := time.Duration(500 * time.Millisecond)
 	start := time.Now()
-	_, err := net.DialTimeout("tcp", url, timeout)
+	conn, err := net.DialTimeout("tcp", url, timeout)
 	if err != nil {
-		fmt.Println("Error:", err)
-		return "timeout"
+		resultChan <- "timeout"
+		return
 	}
+	defer conn.Close() // 确保连接在函数返回时被关闭
 	elapsed := time.Since(start)
-	return elapsed.String()
+	resultChan <- elapsed.String()
 }
 
 func urlToIPP(rawURL string) string {

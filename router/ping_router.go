@@ -41,9 +41,12 @@ func ping(c *gin.Context) {
 		})
 		return
 	}
+	resultChan := make(chan string)
+	go util.GetTCPSpeed(u.Url, resultChan)
+	speed := <-resultChan
 	c.JSON(200, gin.H{
 		"code": 0,
 		"msg":  "pong",
-		"ms":   util.GetTCPSpeed(u.Url),
+		"ms":   speed,
 	})
 }
