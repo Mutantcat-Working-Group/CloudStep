@@ -25,9 +25,10 @@ func (router *SettingRouter) InitRouter(context *gin.Engine) error {
 	context.POST("/url/update", LoginHandler(), updateUrl)
 	context.GET("/url/delete", LoginHandler(), deleteUrl)
 	// 自助的操作
-	context.POST("/selfhelp/add", LoginHandler(), deleteCollection)
-	context.POST("/selfhelp/update", LoginHandler(), deleteCollection)
-	context.GET("/selfhelp/delete", LoginHandler(), deleteCollection)
+	context.GET("/selfhelp/get", LoginHandler(), getSelfHelp)
+	context.POST("/selfhelp/add", LoginHandler(), addSelfHelp)
+	context.POST("/selfhelp/update", LoginHandler(), updateSelfHelp)
+	context.GET("/selfhelp/delete", LoginHandler(), deleteSelfHelp)
 	// 代理的操作
 	context.POST("/proxy/add", LoginHandler(), deleteCollection)
 	context.POST("/proxy/update", LoginHandler(), deleteCollection)
@@ -145,6 +146,13 @@ func deleteCollection(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"code": 1,
 			"msg":  "error",
+		})
+		return
+	}
+	if dao.CheckCollectionDepend(idInt) {
+		c.JSON(200, gin.H{
+			"code": 2,
+			"msg":  "depend",
 		})
 		return
 	}
@@ -273,4 +281,136 @@ func deleteUrl(c *gin.Context) {
 			"msg":  "error",
 		})
 	}
+}
+
+func addSelfHelp(c *gin.Context) {
+	var selfHelp entity.SelfHelp
+	err := c.ShouldBindJSON(&selfHelp)
+	if err != nil {
+		c.JSON(200, gin.H{
+			"code": 1,
+			"msg":  "error",
+		})
+		return
+	}
+	if selfHelp.Point == "" {
+		c.JSON(200, gin.H{
+			"code": 1,
+			"msg":  "error",
+		})
+		return
+	}
+	// 检查名称是否存在
+	if dao.CheckNameExist(selfHelp.Name) {
+		c.JSON(200, gin.H{
+			"code": 2,
+			"msg":  "name is exist",
+		})
+		return
+	}
+
+	// 检查way是否存在
+	if dao.CheckWayExist(selfHelp.Way) {
+		c.JSON(200, gin.H{
+			"code": 3,
+			"msg":  "way is exist",
+		})
+		return
+	}
+	b := dao.AddSelfHelp(selfHelp)
+	if b {
+		c.JSON(200, gin.H{
+			"code": 0,
+			"msg":  "success",
+		})
+		return
+	} else {
+		c.JSON(200, gin.H{
+			"code": 1,
+			"msg":  "error",
+		})
+		return
+	}
+}
+
+func updateSelfHelp(c *gin.Context) {
+	var selfHelp entity.SelfHelp
+	err := c.ShouldBindJSON(&selfHelp)
+	if err != nil {
+		c.JSON(200, gin.H{
+			"code": 1,
+			"msg":  "error",
+		})
+		return
+	}
+	if selfHelp.Id == 0 {
+		c.JSON(200, gin.H{
+			"code": 1,
+			"msg":  "error",
+		})
+		return
+	}
+	b := dao.UpdateSelfHelpById(selfHelp)
+	if b {
+		c.JSON(200, gin.H{
+			"code": 0,
+			"msg":  "success",
+		})
+		return
+	} else {
+		c.JSON(200, gin.H{
+			"code": 1,
+			"msg":  "error",
+		})
+		return
+	}
+}
+
+func deleteSelfHelp(c *gin.Context) {
+	id := c.Query("id")
+	if id == "" {
+		c.JSON(200, gin.H{
+			"code": 1,
+			"msg":  "error",
+		})
+		return
+	}
+	idInt, err := strconv.Atoi(id)
+	if err != nil {
+		c.JSON(200, gin.H{
+			"code": 1,
+			"msg":  "error",
+		})
+		return
+	}
+	b := dao.DeleteSelfHelpById(idInt)
+	if b {
+		c.JSON(200, gin.H{
+			"code": 0,
+			"msg":  "success",
+		})
+		return
+	} else {
+		c.JSON(200, gin.H{
+			"code": 1,
+			"msg":  "error",
+		})
+	}
+}
+
+func getSelfHelp(c *gin.Context) {
+	selfHelps := dao.GetAllSelfHelps()
+	if selfHelps == nil {
+		c.JSON(200, gin.H{
+			"code": 1,
+			"msg":  "error or nil",
+		})
+		return
+	}
+	c.JSON(200, gin.H{
+		"code": 0,
+		"msg":  "success",
+		"data": selfHelps,
+	})
+
 }

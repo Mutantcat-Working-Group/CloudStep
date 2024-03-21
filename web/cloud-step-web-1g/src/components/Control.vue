@@ -1,10 +1,25 @@
 <script setup lang="ts">
-import { ref, onMounted,defineEmits } from 'vue'
+import { ref, onMounted, defineEmits } from 'vue'
 import request from '../utils/request'
 
 const emit = defineEmits(['check'])
 
 onMounted(() => {
+    getAllCollections()
+    getAllSelfHelp()
+
+})
+
+//（一）添加映射集操作
+
+const addCollections = ref([{
+    address: "",
+    status: "未知"
+}])
+
+const addCollectionsName = ref("")
+
+function getAllCollections() {
     // 获得映射集列表
     request.request<any>(
         {
@@ -24,16 +39,7 @@ onMounted(() => {
         alert('获取映射集失败。')
     });
 
-})
-
-//（一）添加映射集操作
-
-const addCollections = ref([{
-    address: "",
-    status: "未知"
-}])
-
-const addCollectionsName = ref("")
+}
 
 function addCollection() {
     addCollections.value.push({
@@ -249,7 +255,10 @@ function deleteCollection() {
             }
             selectedCollectionId.value = ""
             onSelcetdCollectionChange()
-        } else {
+        } else if(res.data.code === 2) {
+            alert('仍有映射依赖此映射集，无法删除')
+        }
+        else {
             alert('删除映射集失败。')
         }
     }).catch(() => {
@@ -393,6 +402,141 @@ function changePassword() {
         }
     }).catch(() => {
         alert('修改密码失败。')
+    });
+}
+
+//（四）自助模式管理
+
+const newSelfHelp = ref({
+    name: "",
+    way: "",
+    point: "",
+    mode: "random"
+})
+
+const allSelfHelp:any = ref([])
+
+function getAllSelfHelp() {
+    request.request<any>(
+        {
+            url: '../selfhelp/get',
+            method: 'get',
+            headers: {
+                "Token": window.sessionStorage.getItem('token')
+            }
+        }
+    ).then((res) => {
+        if (res.data.code === 0) {
+            allSelfHelp.value = res.data.data
+        } else {
+            alert('获取自助模式失败。')
+        }
+    }).catch(() => {
+        alert('获取自助模式失败。')
+    });
+
+}
+
+function addSelfHelp(){
+    if(newSelfHelp.value.name == '' || newSelfHelp.value.way == '' || newSelfHelp.value.point == ''){
+        alert('请填写完整信息。')
+        return
+    }
+    request.request<any>(
+        {
+            url: '../selfhelp/add',
+            method: 'post',
+            data: {
+                name: newSelfHelp.value.name,
+                way: newSelfHelp.value.way,
+                point: newSelfHelp.value.point,
+                mode: newSelfHelp.value.mode
+            },
+            headers: {
+                "Token": window.sessionStorage.getItem('token')
+            }
+        }
+    ).then((res) => {
+        if (res.data.code === 0) {
+            alert('添加自助模式成功。')
+            getAllSelfHelp()
+            cleanNewSelfHelp()
+        }else if(res.data.code === 2) {
+            alert('自助模式名称已存在。')
+        }
+        else if(res.data.code === 3) {
+            alert('自助模式坐标已经存在。')
+        }
+        else {
+            alert('添加自助模式失败。')
+        }
+    }).catch(() => {
+        alert('添加自助模式失败。')
+    });
+
+}
+
+function cleanNewSelfHelp(){
+    newSelfHelp.value = {
+        name: "",
+        way: "",
+        point: "",
+        mode: "random"
+    }
+}
+
+function deleteSelfHelp(id: any){
+    if (!confirm('确定删除自助模式吗？')) {
+        return
+    }
+    request.request<any>(
+        {
+            url: '../selfhelp/delete',
+            method: 'GET',
+            params: {
+                id: id
+            },
+            headers: {
+                "Token": window.sessionStorage.getItem('token')
+            }
+        }
+    ).then((res) => {
+        if (res.data.code === 0) {
+            alert('删除自助模式成功。')
+            getAllSelfHelp()
+        } else {
+            alert('删除自助模式失败。')
+        }
+    }).catch(() => {
+        alert('删除自助模式失败。')
+    });
+}
+
+function updateSelfHelp(item: any){
+    request.request<any>(
+        {
+            url: '../selfhelp/update',
+            method: 'post',
+            data: {
+                id: item.id,
+                name: item.name,
+                way: item.way,
+                point: item.point,
+                mode: item.mode
+            },
+            headers: {
+                "Token": window.sessionStorage.getItem('token')
+            }
+        }
+    ).then((res) => {
+        if (res.data.code === 0) {
+            alert('修改自助模式成功。')
+            getAllSelfHelp()
+        } else {
+            alert('修改自助模式失败。')
+        }
+    }).catch(() => {
+        alert('修改自助模式失败。')
     });
 }
 
@@ -541,16 +685,124 @@ function changePassword() {
                 </div>
                 <div class="layui-tab-item">
                     <div class="collection">
-                        <h2 class="control">自助设置</h2>
-
                         <h2 class="info">自助管理</h2>
+                        <div class="member">
+                            <div style="width:100%">
+                                <div class="layui-row">
+                                    <div class="layui-col-xs2">
+                                        <div class="text-center bigger-text">序号</div>
+                                    </div>
+                                    <div class="layui-col-xs2">
+                                        <div class="text-center bigger-text">别名</div>
+                                    </div>
+                                    <div class="layui-col-xs2">
+                                        <div class="text-center bigger-text">Way</div>
+                                    </div>
+                                    <div class="layui-col-xs2">
+                                        <div class="text-center bigger-text">Point</div>
+                                    </div>
+                                    <div class="layui-col-xs2">
+                                        <div class="text-center bigger-text">模式</div>
+                                    </div>
+                                    <div class="layui-col-xs2">
+                                        <div class="text-center bigger-text">操作</div>
+                                    </div>
+                                </div>
+                            </div>
 
+                            <div style="width:100%" class="items" v-for="(item, index) in allSelfHelp" :key="index">
+                                <div class="layui-row">
+                                    <div class="layui-col-xs2">
+                                        <div class="text-center center-item">{{ index + 1 }}</div>
+                                    </div>
+                                    <div class="layui-col-xs2">
+                                        <div class="text-center center-item"><input type="text" lay-affix="clear"
+                                                placeholder="映射名称" class="layui-input"
+                                                style="caret-color: black;width:80%;" v-model="item.name">
+                                        </div>
+                                    </div>
+                                    <div class="layui-col-xs2">
+                                        <div class="text-center center-item"><input type="text" lay-affix="clear"
+                                                placeholder="映射坐标" class="layui-input"
+                                                style="caret-color: black;width:80%;" v-model="item.way">
+                                        </div>
+                                    </div>
+                                    <div class="layui-col-xs2">
+                                        <div class="text-center center-item">
+                                            <select v-model="item.point">
+                                                <option v-for="(item, index) in allCollections" :key="index"
+                                                    :value="item.Name">{{ item.Name }}</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="layui-col-xs2">
+                                        <div class="text-center center-item">
+                                            <select v-model="item.mode">
+                                                <option value="random">随机</option>
+                                                <option value="polling">轮询</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="layui-col-xs2">
+                                        <div class="text-center center-item">
+                                            <button type="button"
+                                                class="layui-btn layui-btn-primary layui-btn-sm" @click="updateSelfHelp(item)">修改</button>
+                                            <button type="button"
+                                                class="layui-btn layui-btn-primary layui-btn-sm" @click="deleteSelfHelp(item.id)">删除</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="width:100%" class="items">
+                                <div class="layui-row">
+                                    <div class="layui-col-xs2">
+                                        <div class="text-center center-item">(待添加)</div>
+                                    </div>
+                                    <div class="layui-col-xs2">
+                                        <div class="text-center center-item"><input type="text" lay-affix="clear"
+                                                placeholder="映射名称" class="layui-input"
+                                                style="caret-color: black;width:80%;" v-model="newSelfHelp.name">
+                                        </div>
+                                    </div>
+                                    <div class="layui-col-xs2">
+                                        <div class="text-center center-item"><input type="text" lay-affix="clear"
+                                                placeholder="映射坐标" class="layui-input"
+                                                style="caret-color: black;width:80%;" v-model="newSelfHelp.way">
+                                        </div>
+                                    </div>
+                                    <div class="layui-col-xs2">
+                                        <div class="text-center center-item">
+                                            <select v-model="newSelfHelp.point">
+                                                <option value="">[未指定]</option>
+                                                <option v-for="(item, index) in allCollections" :key="index"
+                                                    :value="item.Name">{{ item.Name }}</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="layui-col-xs2">
+                                        <div class="text-center center-item">
+                                            <select v-model="newSelfHelp.mode">
+                                                <option value="random">随机</option>
+                                                <option value="polling">轮询</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="layui-col-xs2">
+                                        <div class="text-center center-item">
+                                            <button type="button"
+                                                class="layui-btn layui-btn-primary layui-btn-sm" @click="addSelfHelp()">添加</button>
+                                            <button type="button"
+                                                class="layui-btn layui-btn-primary layui-btn-sm" @click="cleanNewSelfHelp()">清空</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="layui-tab-item">
                     <div class="collection">
-                        <h2 class="control">代理设置</h2>
-
                         <h2 class="info">代理管理</h2>
                     </div>
                 </div>
@@ -562,7 +814,8 @@ function changePassword() {
                             <div class="layui-input-split layui-input-prefix">
                                 新密码
                             </div>
-                            <input style="caret-color: black;" type="text" placeholder="重置后需要重新登录" class="layui-input" v-model="newPassword">
+                            <input style="caret-color: black;" type="text" placeholder="重置后需要重新登录" class="layui-input"
+                                v-model="newPassword">
                             <div class="layui-input-suffix">
                                 <button class="layui-btn layui-btn-primary" @click="changePassword()">修改密码</button>
                             </div>

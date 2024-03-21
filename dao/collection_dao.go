@@ -112,3 +112,25 @@ func GetCollectionNameById(id int) string {
 	}
 	return collection.Name
 }
+
+// 判断是否有自助模式或者代理模式依赖这个集合
+func CheckCollectionDepend(id int) bool {
+	name := GetCollectionNameById(id)
+	proxy := entity.Proxy{}
+	has, err := PublicEngine.Where("point = ?", name).Get(&proxy)
+	if err != nil {
+		return true
+	}
+	if has {
+		return true
+	}
+	selfHelp := entity.SelfHelp{}
+	has, err = PublicEngine.Where("point = ?", name).Get(&selfHelp)
+	if err != nil {
+		return true
+	}
+	if has {
+		return true
+	}
+	return false
+}
