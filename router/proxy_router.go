@@ -14,7 +14,7 @@ func (router *ProxyRouter) PrepareRouter() error {
 }
 
 func (router *ProxyRouter) InitRouter(context *gin.Engine) error {
-	context.Any("/re/*name", proxy)
+	context.Any("/agent/*name", proxy)
 	return nil
 }
 
