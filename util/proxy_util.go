@@ -13,6 +13,29 @@ import (
 
 func Proxy(targetURL string, c *gin.Context) {
 	proxyUrl, _ := url.Parse(targetURL)
+	// 获取原始的请求参数
+	values := c.Request.URL.Query()
+	// 创建一个新的url.Values来存储修改后的参数
+	newValues := url.Values{}
+	for key, value := range values {
+		// 移除原本路径参数中的way参数 如果存在*way**参数则先将它的值给新的的way、然后再移除
+		if key == "way" {
+		} else if key == "*way**" {
+			newValues.Set("way", value[0])
+		} else {
+			newValues.Set(key, value[0])
+		}
+	}
+	// 将修改后的参数设置回c.Request.URL
+	c.Request.URL.RawQuery = newValues.Encode()
+
+	// 修改原来的请求体json 和 请求表单中的参数 如果存在way就去掉 如果存在*way**就将它的值给way
+	if c.PostForm("way") != "" {
+		c.Request.PostForm.Del("way")
+	}
+	if c.PostForm("*way**") != "" {
+		c.Request.PostForm.Set("way", c.PostForm("*way**"))
+	}
 
 	target, _ := url.Parse(proxyUrl.Scheme + "://" + proxyUrl.Host)
 	if c.Param("name") != "" {
