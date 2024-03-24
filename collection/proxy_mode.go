@@ -26,3 +26,12 @@ func GetProxyPath(way string) string {
 	}
 	return ""
 }
+
+func GetProxyMode(way string) string {
+	MProxyMode.Lock()
+	defer MProxyMode.Unlock()
+	if _, ok := ProxyMode[way]; !ok {
+		return ""
+	}
+	return ProxyMode[way].ProxyMode
+}

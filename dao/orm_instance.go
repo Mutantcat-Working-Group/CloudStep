@@ -75,7 +75,7 @@ func initModes() {
 	// 获得自助模式列表
 	collection.MSelfHelpMode.Lock()
 	defer collection.MSelfHelpMode.Unlock()
-	selfHelps := getAllSelfHelps()
+	selfHelps := GetAllSelfHelps()
 	// 遍历自助模式表
 	for _, one := range selfHelps {
 		// 存入SelfHelpMode

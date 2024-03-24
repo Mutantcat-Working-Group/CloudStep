@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -13,7 +12,7 @@ import (
 
 func Proxy(targetURL string, c *gin.Context) {
 	proxyUrl, _ := url.Parse(targetURL)
-	// 获取原始的请求参数
+	//获取原始的请求参数
 	values := c.Request.URL.Query()
 	// 创建一个新的url.Values来存储修改后的参数
 	newValues := url.Values{}
@@ -28,14 +27,6 @@ func Proxy(targetURL string, c *gin.Context) {
 	}
 	// 将修改后的参数设置回c.Request.URL
 	c.Request.URL.RawQuery = newValues.Encode()
-
-	// 修改原来的请求体json 和 请求表单中的参数 如果存在way就去掉 如果存在*way**就将它的值给way
-	if c.PostForm("way") != "" {
-		c.Request.PostForm.Del("way")
-	}
-	if c.PostForm("*way**") != "" {
-		c.Request.PostForm.Set("way", c.PostForm("*way**"))
-	}
 
 	target, _ := url.Parse(proxyUrl.Scheme + "://" + proxyUrl.Host)
 	if c.Param("name") != "" {
@@ -70,10 +61,18 @@ func RootProxy(targetURL string, c *gin.Context) error {
 	userHeaders := c.Request.Header
 
 	// 解析请求参数
-	requestBody := c.PostForm("body")
+	var requestBody string
+	contentType := c.GetHeader("Content-Type")
+	if strings.Contains(contentType, "application/x-www-form-urlencoded") || strings.Contains(contentType, "multipart/form-data") {
+		_ = c.Request.ParseForm()
+		requestBody = c.Request.PostForm.Encode()
+	} else if strings.Contains(contentType, "application/json") {
+		data, _ := c.GetRawData()
+		requestBody = string(data)
+	}
 
 	// 创建新的请求
-	req, err := http.NewRequest(c.Request.Method, targetURL, nil)
+	req, err := http.NewRequest(c.Request.Method, targetURL, strings.NewReader(requestBody))
 	if err != nil {
 		c.String(http.StatusInternalServerError, "Error creating request: "+err.Error())
 		return fmt.Errorf("创建代理请求失败")
@@ -86,12 +85,6 @@ func RootProxy(targetURL string, c *gin.Context) error {
 		}
 	}
 
-	// 设置请求的 Body（如果是 POST 请求）
-	if c.Request.Method == http.MethodPost {
-		req.Header.Set("Content-Type", "application/json")
-		req.Body = io.NopCloser(strings.NewReader(requestBody))
-	}
-
 	// 发送请求
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -102,7 +95,7 @@ func RootProxy(targetURL string, c *gin.Context) error {
 	defer resp.Body.Close()
 
 	// 返回响应给客户端
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "Error reading response: "+err.Error())
 		return fmt.Errorf("返回响应失败")

@@ -37,5 +37,16 @@ func proxy(c *gin.Context) {
 		})
 		return
 	}
-	util.Proxy(path, c)
+	switch collection.GetProxyMode(way) {
+	case "root":
+		util.RootProxy(path, c)
+		return
+	case "relative":
+		util.Proxy(path, c)
+		return
+	default:
+		c.JSON(200, gin.H{
+			"code": 404,
+		})
+	}
 }
