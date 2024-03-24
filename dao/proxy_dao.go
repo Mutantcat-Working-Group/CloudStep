@@ -109,3 +109,21 @@ func UpdateProxyById(proxy entity.Proxy) bool {
 	collection.ProxyMode[proxy.Way] = proxy
 	return true
 }
+
+func CheckProxyNameExist(name string) bool {
+	var proxy entity.Proxy
+	has, err := PublicEngine.Where("name = ?", name).Get(&proxy)
+	if err != nil {
+		return true
+	}
+	return has
+}
+
+func CheckProxyWayExist(way string) bool {
+	var proxy entity.Proxy
+	has, err := PublicEngine.Where("way = ?", way).Get(&proxy)
+	if err != nil {
+		return true
+	}
+	return has
+}

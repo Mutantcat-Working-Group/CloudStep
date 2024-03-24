@@ -30,9 +30,10 @@ func (router *SettingRouter) InitRouter(context *gin.Engine) error {
 	context.POST("/selfhelp/update", LoginHandler(), updateSelfHelp)
 	context.GET("/selfhelp/delete", LoginHandler(), deleteSelfHelp)
 	// 代理的操作
-	context.POST("/proxy/add", LoginHandler(), deleteCollection)
-	context.POST("/proxy/update", LoginHandler(), deleteCollection)
-	context.GET("/proxy/delete", LoginHandler(), deleteCollection)
+	context.GET("/proxy/get", LoginHandler(), getProxy)
+	context.POST("/proxy/add", LoginHandler(), addProxy)
+	context.POST("/proxy/update", LoginHandler(), updateProxy)
+	context.GET("/proxy/delete", LoginHandler(), deleteProxy)
 	return nil
 }
 
@@ -350,6 +351,9 @@ func updateSelfHelp(c *gin.Context) {
 		})
 		return
 	}
+
+	// 需要判断一下其他的自助是否有相同的way
+
 	b := dao.UpdateSelfHelpById(selfHelp)
 	if b {
 		c.JSON(200, gin.H{
@@ -413,4 +417,135 @@ func getSelfHelp(c *gin.Context) {
 		"data": selfHelps,
 	})
 
+}
+
+func getProxy(c *gin.Context) {
+	proxys := dao.GetAllProxies()
+	if proxys == nil {
+		c.JSON(200, gin.H{
+			"code": 1,
+			"msg":  "error or nil",
+		})
+		return
+	}
+	c.JSON(200, gin.H{
+		"code": 0,
+		"msg":  "success",
+		"data": proxys,
+	})
+}
+
+func addProxy(c *gin.Context) {
+	var proxy entity.Proxy
+	err := c.ShouldBindJSON(&proxy)
+	if err != nil {
+		c.JSON(200, gin.H{
+			"code": 1,
+			"msg":  "error",
+		})
+		return
+	}
+	if proxy.Name == "" {
+		c.JSON(200, gin.H{
+			"code": 1,
+			"msg":  "error",
+		})
+		return
+	}
+	if dao.CheckProxyNameExist(proxy.Name) {
+		c.JSON(200, gin.H{
+			"code": 2,
+			"msg":  "name is exist",
+		})
+		return
+	}
+	if dao.CheckProxyWayExist(proxy.Way) {
+		c.JSON(200, gin.H{
+			"code": 3,
+			"msg":  "way is exist",
+		})
+		return
+	}
+	b := dao.AddProxy(proxy)
+	if b {
+		c.JSON(200, gin.H{
+			"code": 0,
+			"msg":  "success",
+		})
+		return
+	} else {
+		c.JSON(200, gin.H{
+			"code": 1,
+			"msg":  "error",
+		})
+		return
+	}
+}
+
+func updateProxy(c *gin.Context) {
+	var proxy entity.Proxy
+	err := c.ShouldBindJSON(&proxy)
+	if err != nil {
+		c.JSON(200, gin.H{
+			"code": 1,
+			"msg":  "error",
+		})
+		return
+	}
+	if proxy.Id == 0 {
+		c.JSON(200, gin.H{
+			"code": 1,
+			"msg":  "error",
+		})
+		return
+	}
+
+	// 需要判断一下其他的代理是否有相同的way
+
+	b := dao.UpdateProxyById(proxy)
+	if b {
+		c.JSON(200, gin.H{
+			"code": 0,
+			"msg":  "success",
+		})
+		return
+	} else {
+		c.JSON(200, gin.H{
+			"code": 1,
+			"msg":  "error",
+		})
+		return
+	}
+}
+
+func deleteProxy(c *gin.Context) {
+	id := c.Query("id")
+	if id == "" {
+		c.JSON(200, gin.H{
+			"code": 1,
+			"msg":  "error",
+		})
+		return
+	}
+	idInt, err := strconv.Atoi(id)
+	if err != nil {
+		c.JSON(200, gin.H{
+			"code": 1,
+			"msg":  "error",
+		})
+		return
+	}
+	b := dao.DeleteProxyById(idInt)
+	if b {
+		c.JSON(200, gin.H{
+			"code": 0,
+			"msg":  "success",
+		})
+		return
+	} else {
+		c.JSON(200, gin.H{
+			"code": 1,
+			"msg":  "error",
+		})
+	}
 }
