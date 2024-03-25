@@ -23,7 +23,7 @@ func (router *ProxyRouter) DestroyRouter() error {
 }
 
 func proxy(c *gin.Context) {
-	way := util.GetWayParam(c)
+	way := c.Query("way")
 	if way == "" {
 		c.JSON(200, gin.H{
 			"code": 404,

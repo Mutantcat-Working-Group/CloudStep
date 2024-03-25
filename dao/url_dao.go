@@ -43,6 +43,7 @@ func AddUrl(parent string, url string) bool {
 	}
 	// 添加url
 	newUrl := entity.Url{}
+	newUrl.Id = 0
 	newUrl.Parent = parent
 	newUrl.Path = url
 	newUrl.Alive = true

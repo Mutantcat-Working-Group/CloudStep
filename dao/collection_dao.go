@@ -38,7 +38,7 @@ func AddCollection(collectionName string, urls []entity.Url) (bool, int) {
 		session.Rollback()
 		return false, 0
 	}
-	for _, url := range urls {
+	for i, url := range urls {
 		url.Parent = collectionName
 		url.Alive = true
 		url.Retry = 0
@@ -47,6 +47,7 @@ func AddCollection(collectionName string, urls []entity.Url) (bool, int) {
 			session.Rollback()
 			return false, 0
 		}
+		urls[i].Id = url.Id
 	}
 	err = session.Commit()
 	if err != nil {

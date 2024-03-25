@@ -127,3 +127,21 @@ func CheckProxyWayExist(way string) bool {
 	}
 	return has
 }
+
+func CheckProxyWayExistExceptId(way string, id int) bool {
+	var proxy entity.Proxy
+	has, err := PublicEngine.Where("way = ? and id != ?", way, id).Get(&proxy)
+	if err != nil {
+		return true
+	}
+	return has
+}
+
+func CheckProxyNameExistExceptId(name string, id int) bool {
+	var proxy entity.Proxy
+	has, err := PublicEngine.Where("name = ? and id != ?", name, id).Get(&proxy)
+	if err != nil {
+		return true
+	}
+	return has
+}

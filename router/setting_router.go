@@ -353,6 +353,22 @@ func updateSelfHelp(c *gin.Context) {
 	}
 
 	// 需要判断一下其他的自助是否有相同的way
+	if dao.CheckWayExistExceptId(selfHelp.Way, selfHelp.Id) {
+		c.JSON(200, gin.H{
+			"code": 2,
+			"msg":  "way is exist",
+		})
+		return
+	}
+
+	// 需要判断一下其他的自助是否有相同的name
+	if dao.CheckNameExistExceptId(selfHelp.Name, selfHelp.Id) {
+		c.JSON(200, gin.H{
+			"code": 3,
+			"msg":  "name is exist",
+		})
+		return
+	}
 
 	b := dao.UpdateSelfHelpById(selfHelp)
 	if b {
@@ -501,7 +517,22 @@ func updateProxy(c *gin.Context) {
 	}
 
 	// 需要判断一下其他的代理是否有相同的way
+	if dao.CheckProxyWayExistExceptId(proxy.Way, proxy.Id) {
+		c.JSON(200, gin.H{
+			"code": 2,
+			"msg":  "way is exist",
+		})
+		return
+	}
 
+	// 需要判断一下其他的代理是否有相同的name
+	if dao.CheckProxyNameExistExceptId(proxy.Name, proxy.Id) {
+		c.JSON(200, gin.H{
+			"code": 3,
+			"msg":  "name is exist",
+		})
+		return
+	}
 	b := dao.UpdateProxyById(proxy)
 	if b {
 		c.JSON(200, gin.H{

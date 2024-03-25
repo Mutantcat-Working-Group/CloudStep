@@ -128,3 +128,23 @@ func CheckNameExist(name string) bool {
 	}
 	return has
 }
+
+// 判断除了当前这个id外，是否还有其他的way根这个重复
+func CheckWayExistExceptId(way string, id int) bool {
+	var self entity.SelfHelp
+	has, err := PublicEngine.Where("way = ? and id != ?", way, id).Get(&self)
+	if err != nil {
+		return false
+	}
+	return has
+}
+
+// 判断除了当前这个id外，是否还有其他的name根这个重复
+func CheckNameExistExceptId(name string, id int) bool {
+	var self entity.SelfHelp
+	has, err := PublicEngine.Where("name = ? and id != ?", name, id).Get(&self)
+	if err != nil {
+		return false
+	}
+	return has
+}

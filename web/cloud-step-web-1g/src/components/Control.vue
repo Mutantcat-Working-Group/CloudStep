@@ -7,7 +7,7 @@ const emit = defineEmits(['check'])
 onMounted(() => {
     getAllCollections()
     getAllSelfHelp()
-
+    getAllProxy()
 })
 
 //（一）添加映射集操作
@@ -255,7 +255,7 @@ function deleteCollection() {
             }
             selectedCollectionId.value = ""
             onSelcetdCollectionChange()
-        } else if(res.data.code === 2) {
+        } else if (res.data.code === 2) {
             alert('仍有映射依赖此映射集，无法删除')
         }
         else {
@@ -414,7 +414,7 @@ const newSelfHelp = ref({
     mode: "random"
 })
 
-const allSelfHelp:any = ref([])
+const allSelfHelp: any = ref([])
 
 function getAllSelfHelp() {
     request.request<any>(
@@ -437,8 +437,8 @@ function getAllSelfHelp() {
 
 }
 
-function addSelfHelp(){
-    if(newSelfHelp.value.name == '' || newSelfHelp.value.way == '' || newSelfHelp.value.point == ''){
+function addSelfHelp() {
+    if (newSelfHelp.value.name == '' || newSelfHelp.value.way == '' || newSelfHelp.value.point == '') {
         alert('请填写完整信息。')
         return
     }
@@ -461,10 +461,10 @@ function addSelfHelp(){
             alert('添加自助模式成功。')
             getAllSelfHelp()
             cleanNewSelfHelp()
-        }else if(res.data.code === 2) {
+        } else if (res.data.code === 2) {
             alert('自助模式名称已存在。')
         }
-        else if(res.data.code === 3) {
+        else if (res.data.code === 3) {
             alert('自助模式坐标已经存在。')
         }
         else {
@@ -476,7 +476,7 @@ function addSelfHelp(){
 
 }
 
-function cleanNewSelfHelp(){
+function cleanNewSelfHelp() {
     newSelfHelp.value = {
         name: "",
         way: "",
@@ -485,7 +485,7 @@ function cleanNewSelfHelp(){
     }
 }
 
-function deleteSelfHelp(id: any){
+function deleteSelfHelp(id: any) {
     if (!confirm('确定删除自助模式吗？')) {
         return
     }
@@ -512,7 +512,7 @@ function deleteSelfHelp(id: any){
     });
 }
 
-function updateSelfHelp(item: any){
+function updateSelfHelp(item: any) {
     request.request<any>(
         {
             url: '../selfhelp/update',
@@ -532,11 +532,157 @@ function updateSelfHelp(item: any){
         if (res.data.code === 0) {
             alert('修改自助模式成功。')
             getAllSelfHelp()
+        } else if (res.data.code ===2){
+            alert('路径已经在其他地方存在，无法修改。')
+        } else if (res.data.code ===2){
+            alert('名称已经在其他地方存在，无法修改。')
         } else {
             alert('修改自助模式失败。')
         }
     }).catch(() => {
         alert('修改自助模式失败。')
+    });
+}
+
+//（五）代理管理
+const newProxy = ref({
+    name: "",
+    way: "",
+    point: "",
+    mode: "random",
+    proxyMode: "root",
+})
+
+const allProxy = ref<any>([])
+
+function clearNewProxy() {
+    newProxy.value = {
+        name: "",
+        way: "",
+        point: "",
+        mode: "random",
+        proxyMode: "root",
+    }
+}
+
+function addNewProxy(){
+    if (newProxy.value.name == '' || newProxy.value.way == '' || newProxy.value.point == '') {
+        alert('请填写完整信息。')
+        return
+    }
+    request.request<any>(
+        {
+            url: '../proxy/add',
+            method: 'post',
+            data: {
+                name: newProxy.value.name,
+                way: newProxy.value.way,
+                point: newProxy.value.point,
+                mode: newProxy.value.mode,
+                proxyMode: newProxy.value.proxyMode
+            },
+            headers: {
+                "Token": window.sessionStorage.getItem('token')
+            }
+        }
+    ).then((res) => {
+        if (res.data.code === 0) {
+            alert('添加代理成功。')
+            getAllProxy()
+            clearNewProxy()
+        } else if (res.data.code === 2) {
+            alert('代理名称已存在。')
+        }
+        else if (res.data.code === 3) {
+            alert('代理坐标已经存在。')
+        }
+        else {
+            alert('添加代理失败。')
+        }
+    }).catch(() => {
+        alert('添加代理失败。')
+    });
+
+}
+
+function getAllProxy() {
+    request.request<any>(
+        {
+            url: '../proxy/get',
+            method: 'get',
+            headers: {
+                "Token": window.sessionStorage.getItem('token')
+            }
+        }
+    ).then((res) => {
+        if (res.data.code === 0) {
+            allProxy.value = res.data.data
+        } else {
+            alert('获取代理失败。')
+        }
+    }).catch(() => {
+        alert('获取代理失败。')
+    });
+
+}
+
+function updateProxy(item:any) {
+    request.request<any>(
+        {
+            url: '../proxy/update',
+            method: 'post',
+            data: {
+                id: item.id,
+                name: item.name,
+                way: item.way,
+                point: item.point,
+                mode: item.mode,
+                proxyMode: item.proxyMode
+            },
+            headers: {
+                "Token": window.sessionStorage.getItem('token')
+            }
+        }
+    ).then((res) => {
+        if (res.data.code === 0) {
+            alert('修改代理成功。')
+            getAllProxy()
+        } else if (res.data.code ===2){
+            alert('路径已经在其他地方存在，无法修改。')
+        } else if (res.data.code ===2){
+            alert('名称已经在其他地方存在，无法修改。')
+        } else {
+            alert('修改代理失败。')
+        }
+    }).catch(() => {
+        alert('修改代理失败。')
+    });
+}
+
+function deleteProxy(id: any) {
+    if (!confirm('确定删除代理吗？')) {
+        return
+    }
+    request.request<any>(
+        {
+            url: '../proxy/delete',
+            method: 'GET',
+            params: {
+                id: id
+            },
+            headers: {
+                "Token": window.sessionStorage.getItem('token')
+            }
+        }
+    ).then((res) => {
+        if (res.data.code === 0) {
+            alert('删除代理成功。')
+            getAllProxy()
+        } else {
+            alert('删除代理失败。')
+        }
+    }).catch(() => {
+        alert('删除代理失败。')
     });
 }
 
@@ -745,10 +891,10 @@ function updateSelfHelp(item: any){
                                     </div>
                                     <div class="layui-col-xs2">
                                         <div class="text-center center-item">
-                                            <button type="button"
-                                                class="layui-btn layui-btn-primary layui-btn-sm" @click="updateSelfHelp(item)">修改</button>
-                                            <button type="button"
-                                                class="layui-btn layui-btn-primary layui-btn-sm" @click="deleteSelfHelp(item.id)">删除</button>
+                                            <button type="button" class="layui-btn layui-btn-primary layui-btn-sm"
+                                                @click="updateSelfHelp(item)">修改</button>
+                                            <button type="button" class="layui-btn layui-btn-primary layui-btn-sm"
+                                                @click="deleteSelfHelp(item.id)">删除</button>
                                         </div>
                                     </div>
                                 </div>
@@ -790,10 +936,10 @@ function updateSelfHelp(item: any){
                                     </div>
                                     <div class="layui-col-xs2">
                                         <div class="text-center center-item">
-                                            <button type="button"
-                                                class="layui-btn layui-btn-primary layui-btn-sm" @click="addSelfHelp()">添加</button>
-                                            <button type="button"
-                                                class="layui-btn layui-btn-primary layui-btn-sm" @click="cleanNewSelfHelp()">清空</button>
+                                            <button type="button" class="layui-btn layui-btn-primary layui-btn-sm"
+                                                @click="addSelfHelp()">添加</button>
+                                            <button type="button" class="layui-btn layui-btn-primary layui-btn-sm"
+                                                @click="cleanNewSelfHelp()">清空</button>
                                         </div>
                                     </div>
                                 </div>
@@ -804,6 +950,140 @@ function updateSelfHelp(item: any){
                 <div class="layui-tab-item">
                     <div class="collection">
                         <h2 class="info">代理管理</h2>
+                        <div class="member">
+                            <div style="width:100%">
+                                <div class="layui-row">
+                                    <div class="layui-col-xs2">
+                                        <div class="text-center bigger-text">序号</div>
+                                    </div>
+                                    <div class="layui-col-xs2">
+                                        <div class="text-center bigger-text">别名</div>
+                                    </div>
+                                    <div class="layui-col-xs2">
+                                        <div class="text-center bigger-text">Way</div>
+                                    </div>
+                                    <div class="layui-col-xs2">
+                                        <div class="text-center bigger-text">Point</div>
+                                    </div>
+                                    <div class="layui-col-xs1">
+                                        <div class="text-center bigger-text">代理</div>
+                                    </div>
+                                    <div class="layui-col-xs1">
+                                        <div class="text-center bigger-text">选用</div>
+                                    </div>
+                                    <div class="layui-col-xs2">
+                                        <div class="text-center bigger-text">操作</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="width:100%" class="items" v-for="(item, index) in allProxy" :key="index">
+                                <div class="layui-row">
+                                    <div class="layui-col-xs2">
+                                        <div class="text-center center-item">{{ index + 1 }}</div>
+                                    </div>
+                                    <div class="layui-col-xs2">
+                                        <div class="text-center center-item"><input type="text" lay-affix="clear"
+                                                placeholder="映射名称" class="layui-input"
+                                                style="caret-color: black;width:80%;" v-model="item.name">
+                                        </div>
+                                    </div>
+                                    <div class="layui-col-xs2">
+                                        <div class="text-center center-item"><input type="text" lay-affix="clear"
+                                                placeholder="映射坐标" class="layui-input"
+                                                style="caret-color: black;width:80%;" v-model="item.way">
+                                        </div>
+                                    </div>
+                                    <div class="layui-col-xs2">
+                                        <div class="text-center center-item">
+                                            <select v-model="item.point">
+                                                <option value="">[未指定]</option>
+                                                <option v-for="(item, index) in allCollections" :key="index"
+                                                    :value="item.Name">{{ item.Name }}</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="layui-col-xs1">
+                                        <div class="text-center center-item">
+                                            <select v-model="item.mode">
+                                                <option value="random">随机</option>
+                                                <option value="polling">轮询</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="layui-col-xs1">
+                                        <div class="text-center center-item">
+                                            <select v-model="item.proxyMode">
+                                                <option value="root">根代理</option>
+                                                <option value="relative">子代理</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="layui-col-xs2">
+                                        <div class="text-center center-item">
+                                            <button type="button" class="layui-btn layui-btn-primary layui-btn-sm"
+                                                @click="updateProxy(item)">修改</button>
+                                            <button type="button" class="layui-btn layui-btn-primary layui-btn-sm"
+                                                @click="deleteProxy(item.id)">删除</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        
+
+                            <div style="width:100%" class="items">
+                                <div class="layui-row">
+                                    <div class="layui-col-xs2">
+                                        <div class="text-center center-item">(待添加)</div>
+                                    </div>
+                                    <div class="layui-col-xs2">
+                                        <div class="text-center center-item"><input type="text" lay-affix="clear"
+                                                placeholder="映射名称" class="layui-input"
+                                                style="caret-color: black;width:80%;" v-model="newProxy.name">
+                                        </div>
+                                    </div>
+                                    <div class="layui-col-xs2">
+                                        <div class="text-center center-item"><input type="text" lay-affix="clear"
+                                                placeholder="映射坐标" class="layui-input"
+                                                style="caret-color: black;width:80%;" v-model="newProxy.way">
+                                        </div>
+                                    </div>
+                                    <div class="layui-col-xs2">
+                                        <div class="text-center center-item">
+                                            <select v-model="newProxy.point">
+                                                <option value="">[未指定]</option>
+                                                <option v-for="(item, index) in allCollections" :key="index"
+                                                    :value="item.Name">{{ item.Name }}</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="layui-col-xs1">
+                                        <div class="text-center center-item">
+                                            <select v-model="newProxy.mode">
+                                                <option value="random">随机</option>
+                                                <option value="polling">轮询</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="layui-col-xs1">
+                                        <div class="text-center center-item">
+                                            <select v-model="newProxy.proxyMode">
+                                                <option value="root">根代理</option>
+                                                <option value="relative">子代理</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="layui-col-xs2">
+                                        <div class="text-center center-item">
+                                            <button type="button" class="layui-btn layui-btn-primary layui-btn-sm"
+                                                @click="addNewProxy()">添加</button>
+                                            <button type="button" class="layui-btn layui-btn-primary layui-btn-sm"
+                                                @click="clearNewProxy()">清空</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="layui-tab-item">

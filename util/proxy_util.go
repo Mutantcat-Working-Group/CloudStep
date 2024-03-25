@@ -52,7 +52,12 @@ func RootProxy(targetURL string, c *gin.Context) error {
 	targetURL += "?"
 	for key, values := range queryParams {
 		for _, value := range values {
-			targetURL += key + "=" + value + "&"
+			if key != "way" {
+				targetURL += key + "=" + value + "&"
+			}
+			if key == "*way**" {
+				targetURL += "way=" + value + "&"
+			}
 		}
 	}
 	targetURL = strings.TrimRight(targetURL, "&")

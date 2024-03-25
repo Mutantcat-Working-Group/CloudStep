@@ -85,7 +85,7 @@ func initModes() {
 	// 获得代理列表
 	collection.MProxyMode.Lock()
 	defer collection.MProxyMode.Unlock()
-	proxys := getAllProxies()
+	proxys := GetAllProxies()
 	// 遍历代理表
 	for _, one := range proxys {
 		// 存入ProxyMode
