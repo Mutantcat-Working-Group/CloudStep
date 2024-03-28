@@ -25,7 +25,7 @@ jobs:
           platform: x64
 
       - name: Build ARM64 binary
-        run: CGO_ENABLED=1 GOOS=linux GOARCH=arm64 CC=aarch64-linux-gnu-gcc go build
+        run: CGO_ENABLED=1 GOOS=linux GOARCH=arm64 go build
         
       - name: Create release
         id: create_release
