@@ -24,4 +24,20 @@ jobs:
     - name: Build ARM64 binary
       run: CGO_ENABLED=1 GOARCH=arm64 go build
 
+    - name: Create release
+      id: create_release
+      uses: taiki-e/create-gh-release-action@v1
+      with:
+        changelog: CHANGELOG.md
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Upload binary
+      id: upload_assets
+      uses: taiki-e/upload-rust-binary-action@v1
+      with:
+        bin: myapp
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       
