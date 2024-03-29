@@ -8,7 +8,7 @@ import (
 
 // 初始化Gin服务
 func InitGin() *gin.Engine {
-	//gin.SetMode(gin.ReleaseMode)
+	gin.SetMode(gin.ReleaseMode)
 	ginServer := gin.Default()
 	config := cors.DefaultConfig()
 	config.AllowAllOrigins = true
