@@ -1,5 +1,5 @@
 <div align=center>
-<img src="https://s2.loli.net/2024/03/17/o3R6NUMbxwEd1zQ.jpg" style="width:100px;"/>
+<img src="https://s2.loli.net/2024/03/17/o3R6NUMbxwEd1zQ.jpg" style="width:100px;" width="100"/>
 <h2>云阶</h2>
 </div>
 
