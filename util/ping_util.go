@@ -23,16 +23,18 @@ func GetTCPSpeed(url string, resultChan chan string) {
 
 // 将任何链接转换为IP+端口的形式
 func urlToIPP(rawURL string) string {
-	// 去过前面有没有http://或者https://
-	if rawURL[:7] == "http://" {
+	// 去掉前面有没有http://或者https://,先做长度判断避免切片越界
+	if len(rawURL) >= 7 && rawURL[:7] == "http://" {
 		rawURL = rawURL[7:]
-	}
-	if rawURL[:8] == "https://" {
+	} else if len(rawURL) >= 8 && rawURL[:8] == "https://" {
 		rawURL = rawURL[8:]
 	}
-	// 如果后面有任何路径，去掉路径
-	if strings.Contains(rawURL, "/") {
-		rawURL = rawURL[:strings.Index(rawURL, "/")]
+	// 去掉用户信息(如 user:pass@host)以及路径,只保留 host:port
+	if idx := strings.Index(rawURL, "@"); idx != -1 {
+		rawURL = rawURL[idx+1:]
+	}
+	if idx := strings.Index(rawURL, "/"); idx != -1 {
+		rawURL = rawURL[:idx]
 	}
 
 	return rawURL

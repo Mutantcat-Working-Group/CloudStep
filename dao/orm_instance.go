@@ -38,8 +38,13 @@ func init() {
 	if err != nil {
 		fmt.Println("同步表结构url失败, err: ", err)
 	}
+	err = engine.Sync2(new(entity.SystemConfig))
+	if err != nil {
+		fmt.Println("同步表结构system_config失败, err: ", err)
+	}
 
 	PublicEngine = engine
+	InitSystemConfig()
 	initUser()
 	initModes()
 }

@@ -11,8 +11,15 @@ import (
 )
 
 func Proxy(targetURL string, c *gin.Context) {
-	proxyUrl, _ := url.Parse(targetURL)
-	//获取原始的请求参数
+	proxyUrl, err := url.Parse(targetURL)
+	if err != nil || proxyUrl.Host == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "msg": "代理目标地址无效"})
+		return
+	}
+	if reason, _ := checkIntranetBlocked(proxyUrl.Hostname()); reason != "" {
+		c.JSON(http.StatusForbidden, gin.H{"code": 403, "msg": "禁止代理到" + reason + "地址"})
+		return
+	}
 	values := c.Request.URL.Query()
 	// 创建一个新的url.Values来存储修改后的参数
 	newValues := url.Values{}
@@ -45,27 +52,31 @@ func Proxy(targetURL string, c *gin.Context) {
 }
 
 func RootProxy(targetURL string, c *gin.Context) error {
-	// 获取原来请求的所有get参数
+	// 收集并重新编码 GET 参数,避免用户输入中的特殊字符被注入为额外参数
 	queryParams := c.Request.URL.Query()
-
-	// 全部赋予到新的请求中
-	targetURL += "?"
+	newValues := url.Values{}
 	for key, values := range queryParams {
-		for _, value := range values {
-			if key != "way" {
-				targetURL += key + "=" + value + "&"
-			}
-			if key == "*way**" {
-				targetURL += "way=" + value + "&"
-			}
+		if key == "way" {
+			continue
 		}
+		if key == "*way**" {
+			newValues["way"] = values
+			continue
+		}
+		newValues[key] = values
 	}
-	targetURL = strings.TrimRight(targetURL, "&")
+	if encoded := newValues.Encode(); encoded != "" {
+		targetURL += "?" + encoded
+	}
+
+	// 在处理请求头/体前先做 SSRF 校验,拒绝则直接返回
+	if blockedReason, err := checkIntranetBlocked(targetURL); blockedReason != "" {
+		c.JSON(http.StatusForbidden, gin.H{"code": 403, "msg": "禁止代理到" + blockedReason + "地址"})
+		return err
+	}
 
 	// 获取用户请求的请求头
 	userHeaders := c.Request.Header
-
-	// 解析请求参数
 	var requestBody string
 	contentType := c.GetHeader("Content-Type")
 	if strings.Contains(contentType, "application/x-www-form-urlencoded") || strings.Contains(contentType, "multipart/form-data") {
@@ -107,4 +118,20 @@ func RootProxy(targetURL string, c *gin.Context) error {
 	}
 	c.String(http.StatusOK, string(body))
 	return nil
+}
+
+// checkIntranetBlocked 在管理员关闭内网代理时,拒绝代理到私有/回环/未指定地址。
+// 返回空字符串表示放行;否则返回被拒原因与一个非 nil 的 error。
+func checkIntranetBlocked(targetURL string) (string, error) {
+	if AllowIntranet() {
+		return "", nil
+	}
+	parsed, err := url.Parse(targetURL)
+	if err != nil || parsed.Hostname() == "" {
+		return "", err
+	}
+	if reason, blocked := ClassifyIP(parsed.Hostname()); blocked {
+		return reason, fmt.Errorf("禁止代理到内网地址")
+	}
+	return "", nil
 }

@@ -34,11 +34,38 @@ func (router *SettingRouter) InitRouter(context *gin.Engine) error {
 	context.POST("/proxy/add", LoginHandler(), addProxy)
 	context.POST("/proxy/update", LoginHandler(), updateProxy)
 	context.GET("/proxy/delete", LoginHandler(), deleteProxy)
+	// 系统开关(内网代理是否放行)
+	context.GET("/sysconfig/get", LoginHandler(), getSysConfig)
+	context.POST("/sysconfig/update", LoginHandler(), updateSysConfig)
 	return nil
 }
 
 func (router *SettingRouter) DestroyRouter() error {
 	return nil
+}
+
+func getSysConfig(c *gin.Context) {
+	c.JSON(200, gin.H{
+		"code": 0,
+		"msg":  "success",
+		"data": dao.GetSystemConfig(),
+	})
+}
+
+func updateSysConfig(c *gin.Context) {
+	type body struct {
+		AllowIntranetProxy bool `json:"allowIntranetProxy"`
+	}
+	var b body
+	if c.ShouldBindJSON(&b) != nil {
+		c.JSON(200, gin.H{"code": 1, "msg": "参数错误"})
+		return
+	}
+	if dao.UpdateSystemConfig(entity.SystemConfig{AllowIntranetProxy: b.AllowIntranetProxy}) {
+		c.JSON(200, gin.H{"code": 0, "msg": "success"})
+		return
+	}
+	c.JSON(200, gin.H{"code": 1, "msg": "error"})
 }
 
 func getAllCollection(c *gin.Context) {

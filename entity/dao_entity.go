@@ -39,3 +39,10 @@ type User struct {
 	Username string `xorm:"varchar(200) notnull"`
 	Password string `xorm:"varchar(200) notnull"`
 }
+
+// SystemConfig 系统级运行开关表,只有一行(id=1)。
+type SystemConfig struct {
+	Id int `xorm:"pk" json:"id"`
+	// AllowIntranetProxy 是否允许反代理目标为私有/内网/回环/链路本地地址
+	AllowIntranetProxy bool `xorm:"notnull" json:"allowIntranetProxy"`
+}
