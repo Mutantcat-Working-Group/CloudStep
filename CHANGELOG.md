@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.20260711] - 2026-07-11
 
+### Dependency upgrades (安全/漏洞防线)
+
+- `github.com/gin-gonic/gin` v1.9.1 → **v1.12.0**(次要版本升级,基础 API 保持向后兼容)。
+- `github.com/gin-contrib/cors` v1.7.0 → **v1.7.7**。
+- `github.com/mattn/go-sqlite3` v1.14.22 → **v1.14.47**(捆绑的 SQLite C 库更新,覆盖多个上游 CVE)。
+- `github.com/antlabs/timer` v0.1.3 → **v0.1.4**。
+- `xorm.io/xorm` v1.3.8 → **v1.4.1**(保持向后兼容,未改代码接口)。
+- 同步清理 `go.mod` / `go.sum`,拉齐 transitive 依赖(`golang.org/x/*`、`google.golang.org/protobuf`、`github.com/goccy/go-json`、`github.com/pelletier/go-toml/v2`、`github.com/ugorji/go/codec`、`github.com/go-playground/validator/v10`、`github.com/gabriel-vasile/mimetype` 等)。
+
 ### Security
 
 - `util/ping_util.go` `urlToIPP` 修复越界崩溃(DoS):对长度不足 7/8 字节的输入做边界检查,并剥离 `user:info@` 用户信息段,避免服务端直接 panic。(#1)
