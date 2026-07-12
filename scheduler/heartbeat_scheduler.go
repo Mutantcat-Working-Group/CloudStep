@@ -8,6 +8,7 @@
 package scheduler
 
 import (
+	"com.mutantcat.cloud_step/alert"
 	"com.mutantcat.cloud_step/collection"
 	"com.mutantcat.cloud_step/dao"
 	"com.mutantcat.cloud_step/entity"
@@ -62,6 +63,8 @@ func oneUrlBeat(u entity.Url) {
 		if next >= failThreshold {
 			if dao.UpdateUrlAlive(u.Id, false) {
 				log.Printf("[heartbeat] url id=%d path=%s set ALIVE=false after %d failures", u.Id, u.Path, next)
+				// 下线成功后 emit 告警 DOWN 事件(异步 channel, 防抖/发送由 dispatcher 负责)。
+				alert.Emit(alert.Event{Id: u.Id, Path: u.Path, Kind: alert.KindDown, Attempts: next})
 			}
 		} else {
 			log.Printf("[heartbeat] url id=%d path=%s fail (%d/%d)", u.Id, u.Path, next, failThreshold)
@@ -71,7 +74,21 @@ func oneUrlBeat(u entity.Url) {
 		if readRetry(u.Id) != 0 {
 			dao.UpdateUrlRetry(u.Id, 0)
 		}
+		// 恢复检测: 若 DB 侧该 URL 当前仍是 down(alive=false)但本次探活成功, 视为恢复, 发 UP 事件。
+		// 生产 beatAll 只探活 alive=true 的 URL, 此路径为防御性兜底; 主要恢复路径在 admin-enable / 自申请 reactivate。
+		if readUrlAlive(u.Id) == false {
+			alert.Emit(alert.Event{Id: u.Id, Path: u.Path, Kind: alert.KindUp, Attempts: 0})
+		}
 	}
+}
+
+func readUrlAlive(id int) bool {
+	var u entity.Url
+	has, err := dao.PublicEngine.ID(id).Cols("alive").Get(&u)
+	if err != nil || !has {
+		return true // miss 兜底为"视作在线", 避免误发恢复事件
+	}
+	return u.Alive
 }
 
 func readRetry(id int) int {

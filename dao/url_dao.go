@@ -222,6 +222,20 @@ func GetUrl(id int) (entity.Url, bool) {
 	return u, true
 }
 
+// UpdateUrlAlertState 原子写回 url 的告警元数据(下线/恢复通道调用)。
+// at=告警时间, isDown=该条告警是否为 DOWN, failCount=累计失败次数。
+// 仅更新 last_alert_at / last_alert_is_down / last_alert_fail_count 三列。
+func UpdateUrlAlertState(id int, at time.Time, isDown bool, failCount int) bool {
+	affected, err := PublicEngine.ID(id).Cols(
+		"last_alert_at", "last_alert_is_down", "last_alert_fail_count",
+	).Update(&entity.Url{
+		LastAlertAt:        &at,
+		LastAlertIsDown:    isDown,
+		LastAlertFailCount: failCount,
+	})
+	return err == nil && affected != 0
+}
+
 // GenerateAndSaveUrlKey 返回 url id 的当前自申请密钥; url 不存在返 ("", err).
 // 首次读取(SelfDeactivateKey=="")时 RandToken(32) 落库+cache 后返回.
 func GenerateAndSaveUrlKey(id int) (string, error) {

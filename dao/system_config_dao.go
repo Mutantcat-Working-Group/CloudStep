@@ -4,6 +4,7 @@ import (
 	"com.mutantcat.cloud_step/entity"
 	"com.mutantcat.cloud_step/util"
 	"log"
+	"strings"
 )
 
 const systemConfigId = 1
@@ -58,5 +59,83 @@ func UpdateSystemConfig(in entity.SystemConfig) bool {
 		return false
 	}
 	util.SetSystemConfigFromDao(in)
+	return true
+}
+
+// UpdateAlertConfig 写入告警相关字段, 非告警字段(intranet 代理/默认集)务必保留原值。
+// 采用"零值保留"合并: 字符串空、整数 0、bool false 视为"未提交, 保留 DB 现值"。
+// 注意 bool 因此无法通过本接口显式置 false(admin 前端通常会把控件当前值全量提交,
+// 若确有置 false 需求可扩展指针字段; 当前三类 bool 默认 0=false 语义自洽)。
+func UpdateAlertConfig(in entity.SystemConfig) bool {
+	const sentinel = "***"
+
+	existing := GetSystemConfig()
+
+	// 非告警字段: 告警接口不碰, 沿用现有值。
+	merged := existing
+
+	// 字符串字段分两档:
+	//   - webhook / host / user / from / to(非脱敏): 空串=清除(前端全量提交当前值, 空即真意清空)。
+	//   - ding secret / smtp password(脱敏): GET 时掩码为 ***, 故"***"=保留原值, 空串=清空, 其余=设定。
+	if s := strings.TrimSpace(in.AlertDingWebhook); s != "" {
+		merged.AlertDingWebhook = s
+	}
+	if s := strings.TrimSpace(in.AlertSMTPHost); s != "" {
+		merged.AlertSMTPHost = s
+	}
+	if s := strings.TrimSpace(in.AlertSMTPUser); s != "" {
+		merged.AlertSMTPUser = s
+	}
+	if s := strings.TrimSpace(in.AlertSMTPFrom); s != "" {
+		merged.AlertSMTPFrom = s
+	}
+	if s := strings.TrimSpace(in.AlertSMTPTo); s != "" {
+		merged.AlertSMTPTo = s
+	}
+	// 脱敏字符串(ding secret / smtp password): GET 掩码为 ***, 故:
+	//   "***"=保留原值, ""=清空, 其余=设定。
+	if s := strings.TrimSpace(in.AlertDingSecret); s == sentinel {
+		// 保留现有。
+	} else {
+		merged.AlertDingSecret = s
+	}
+	if s := strings.TrimSpace(in.AlertSMTPPassword); s == sentinel {
+		// 保留现有。
+	} else {
+		merged.AlertSMTPPassword = s
+	}
+
+	// 整数字段: 0 视为保留(debounce/port 均有合理默认)。
+	if in.AlertSMTPPort != 0 {
+		merged.AlertSMTPPort = in.AlertSMTPPort
+	}
+	if in.AlertDebounceSec != 0 {
+		merged.AlertDebounceSec = in.AlertDebounceSec
+	}
+
+	// bool 字段: 直接覆写(前端全量提交当前控件值, 总开关/通道开关均可靠)。
+	merged.AlertEnabled = in.AlertEnabled
+	merged.AlertDingEnabled = in.AlertDingEnabled
+	merged.AlertMailEnabled = in.AlertMailEnabled
+
+	merged.Id = systemConfigId
+	session := PublicEngine.NewSession()
+	defer session.Close()
+	if err := session.Begin(); err != nil {
+		return false
+	}
+	if _, err := session.Cols(
+		"alert_enabled", "alert_ding_enabled", "alert_ding_webhook", "alert_ding_secret",
+		"alert_mail_enabled", "alert_smtp_host", "alert_smtp_port", "alert_smtp_user",
+		"alert_smtp_password", "alert_smtp_from", "alert_smtp_to", "alert_debounce_sec",
+	).ID(systemConfigId).Update(&merged); err != nil {
+		session.Rollback()
+		return false
+	}
+	if err := session.Commit(); err != nil {
+		session.Rollback()
+		return false
+	}
+	util.SetSystemConfigFromDao(merged)
 	return true
 }

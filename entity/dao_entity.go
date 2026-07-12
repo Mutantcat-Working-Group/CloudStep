@@ -38,6 +38,13 @@ type Url struct {
 	Alive  bool   `xorm:"notnull" json:"alive"`                // 是否存活
 	Retry  int    `xorm:"notnull" json:"retry"`                // 重试次数
 
+	// LastAlertAt 最近一次真正发出了告警消息的时间(NULL=从未告警)。
+	// LastAlertIsDown 1=最近一次告警是 DOWN(安全默认: 现有行视为"已 DOWN 过", 防启动风暴)。
+	// LastAlertFailCount: DOWN 路径累计次数, UP 路径清零。
+	LastAlertAt        *time.Time `json:"lastAlertAt"`
+	LastAlertIsDown    bool      `xorm:"notnull default(1)" json:"lastAlertIsDown"`
+	LastAlertFailCount int       `xorm:"notnull default(0)" json:"lastAlertFailCount"`
+
 	// 服务器携密钥自申请停用(可指定时间): F1-F6 扩展列
 	SelfDeactivateKey      string     `xorm:"varchar(200) notnull default('')" json:"selfDeactivateKey"`
 	SelfDeactivateUntil    *time.Time `json:"selfDeactivateUntil"` // 到期时间, NULL = 无在用自申请(xorm 无 notnull → NULLable 列)
@@ -60,4 +67,27 @@ type SystemConfig struct {
 	// 自助 / 代理模式默认映射集; 0 表示未配置。
 	SelfDefaultCollectionId  int `xorm:"notnull default(0)" json:"selfDefaultCollectionId"`
 	AgentDefaultCollectionId int `xorm:"notnull default(0)" json:"agentDefaultCollectionId"`
+
+	// ---- 地址失效告警(host / mail 双通道, 防抖) ----
+
+	// AlertEnabled 告警总开关(0=关闭, 关闭时 dispatcher 直接丢弃事件)。
+	AlertEnabled bool `xorm:"notnull default(0)" json:"alertEnabled"`
+
+	// AlertDingEnabled / AlertDingWebhook / AlertDingSecret 钉钉群机器人通道配置。
+	// Secret 为空表示 plain webhook(不加签); 非空走加签( timestamp + "\n" + secret, HMAC-SHA256 → base64 → urlencode)。
+	AlertDingEnabled bool   `xorm:"notnull default(0)" json:"alertDingEnabled"`
+	AlertDingWebhook string `xorm:"varchar(500) notnull default('')" json:"alertDingWebhook"`
+	AlertDingSecret  string `xorm:"varchar(200) notnull default('')" json:"alertDingSecret"`
+
+	// AlertMailEnabled / AlertSMTP* 邮件(SMTP) 通道配置。
+	AlertMailEnabled  bool   `xorm:"notnull default(0)" json:"alertMailEnabled"`
+	AlertSMTPHost     string `xorm:"'alert_smtp_host' varchar(200) notnull default('')" json:"alertSmtpHost"`
+	AlertSMTPPort     int    `xorm:"'alert_smtp_port' notnull default(25)" json:"alertSmtpPort"`
+	AlertSMTPUser     string `xorm:"'alert_smtp_user' varchar(200) notnull default('')" json:"alertSmtpUser"`
+	AlertSMTPPassword string `xorm:"'alert_smtp_password' varchar(200) notnull default('')" json:"alertSmtpPassword"`
+	AlertSMTPFrom     string `xorm:"'alert_smtp_from' varchar(200) notnull default('')" json:"alertSmtpFrom"`
+	AlertSMTPTo       string `xorm:"'alert_smtp_to' varchar(500) notnull default('')" json:"alertSmtpTo"` // 逗号分隔
+
+	// AlertDebounceSec 同一 URL 同一 kind(UP/DOWN)的告警防抖窗口(秒), 默认 600。
+	AlertDebounceSec int `xorm:"notnull default(600)" json:"alertDebounceSec"`
 }
