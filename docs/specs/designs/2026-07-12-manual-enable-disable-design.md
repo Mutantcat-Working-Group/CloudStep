@@ -184,3 +184,12 @@ selfHelpMode.GetPath(way):
 - **启用复位 Retry=0 语义**: 未来心跳(#4)共用此路径时, 心跳判活成功 → `enable` 会复 retry=0, 这是我们所期望的。心跳判死 → `disable` 不改 retry, 所以 retry 数累计用于告警(#6)。
 - **`filterAlive` 双文件独立实现**: 未来心跳/自申请停用可能分化 helper, 双文件边界给演化留缝。
 - **前端改动**: 在管理后台(`web/cloud-step-web-1g/...`)映射集详情表格的每行 URL 加一个启用/禁用按钮。后端接口先独立落地; 前端是否在本轮同步升级未在 spec 内规定, 需单独前端工作。本轮 spec 仅管 Go 后端。
+
+### `filterAlive` 命名落地的偏差
+
+spec §4 写明"`filterAlive` 写在各自文件里保持文件边界(双份 helper, 独立演化)"。Go 不允许同 package 下两份同 package-level 函数名(`filterAlive redeclared` build error),实际落地为:
+
+- `collection/self_help_mode.go::filterAlive`
+- `collection/proxy_mode.go::filterProxyAlive`
+
+功能完全一致(都 return only-Alive urls),对原 spec 的设计意图(独立演化留缝)无影响;仅名称的对称性让步给 Go 语言限制。如果未来任一文件演化出不同的过滤逻辑,命名差异反而能区分二者。
