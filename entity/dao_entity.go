@@ -49,6 +49,6 @@ type SystemConfig struct {
 
 	// SelfDefaultCollectionId / AgentDefaultCollectionId 配置空 way= 时的
 	// 自助 / 代理模式默认映射集; 0 表示未配置。
-	SelfDefaultCollectionId  int `xorm:"notnull" json:"selfDefaultCollectionId"`
-	AgentDefaultCollectionId int `xorm:"notnull" json:"agentDefaultCollectionId"`
+	SelfDefaultCollectionId  int `xorm:"notnull default(0)" json:"selfDefaultCollectionId"`
+	AgentDefaultCollectionId int `xorm:"notnull default(0)" json:"agentDefaultCollectionId"`
 }

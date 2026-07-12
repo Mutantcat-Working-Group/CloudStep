@@ -21,7 +21,7 @@ func InitSystemConfig() {
 			log.Fatal("写入默认系统配置失败: ", err)
 		}
 	}
-	util.SetAllowIntranetProxy(cfg.AllowIntranetProxy)
+	util.SetSystemConfigFromDao(cfg)
 }
 
 func GetSystemConfig() entity.SystemConfig {
@@ -33,13 +33,21 @@ func GetSystemConfig() entity.SystemConfig {
 }
 
 func UpdateSystemConfig(in entity.SystemConfig) bool {
+	// 校验 default id 指向存在的 collection(0 表示"清除默认", 合法)。
+	if in.SelfDefaultCollectionId > 0 && GetCollectionNameById(in.SelfDefaultCollectionId) == "" {
+		return false
+	}
+	if in.AgentDefaultCollectionId > 0 && GetCollectionNameById(in.AgentDefaultCollectionId) == "" {
+		return false
+	}
+
 	in.Id = systemConfigId
 	session := PublicEngine.NewSession()
 	defer session.Close()
 	if err := session.Begin(); err != nil {
 		return false
 	}
-	if _, err := session.ID(systemConfigId).Update(&in); err != nil {
+	if _, err := session.Cols("allow_intranet_proxy", "self_default_collection_id", "agent_default_collection_id").ID(systemConfigId).Update(&in); err != nil {
 		session.Rollback()
 		return false
 	}
@@ -47,6 +55,6 @@ func UpdateSystemConfig(in entity.SystemConfig) bool {
 		session.Rollback()
 		return false
 	}
-	util.SetAllowIntranetProxy(in.AllowIntranetProxy)
+	util.SetSystemConfigFromDao(in)
 	return true
 }
