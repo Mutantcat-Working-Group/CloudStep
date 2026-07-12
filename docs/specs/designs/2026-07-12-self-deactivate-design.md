@@ -143,7 +143,7 @@
 | 重复 self-deactivate | 续新 until 或 同一 until(等义) |
 | 时钟偏移/重启 | scheduler 续拾所有 due url |
 | URL 密文 key 被管理员新 rotate | 旧 key 立刻失效; 持有旧 key 的服务器进一步请求 403 |
-| self-deactivate 后立刻 admin-enable | admin-enable 写 alive=true + retry=0, 但不改 until(由 reactivate scheduler 继续 tick)。⚠️ 实际上 admin-enable 走到我们 func 后, 由于 AdminHandler 链路不调 self-activate, 需要确认 `dao.UpdateUrlAlive(id,true)` 同时清 `self_deactivate_until=null` 才能避免后续 reactivate scheduler 做无用工。建议: admin 操作后, 任何将 url.Alive 外置 true 的调用(Application层) 都 `ClearUrlSelfDeactivate(id)` 清 until。这条 invariant 要写在 UpdateUrlAlive 之外 — 在 Application 层(router 或 management hook)处理。 |
+| admin-enable 与自申请窗口冲突 | 若 url 正处于自申请窗口内, 管理员调用 `/url/enable`(或任何 admin-enable 路径), 必须 clear 自申请三字段(`self_deactivate_until=NULL, attempts=0`)。这保证「管理员说了算」: admin-enable 一出, 自申请窗口立刻销毁。任何 Application 层调用 `dao.UpdateUrlAlive(id, true)` 成功后的 downstream handler 都必须 `ClearUrlSelfDeactivate(id)`。此 invariant 严禁下放到 `UpdateUrlAlive` dao 函数。|
 
 ## 6. 测试
 
@@ -155,6 +155,6 @@
 
 - 阻尼列(方案 A)不加 disable_source enum — 使用 `self_deactivate_until NULL` 隐式编码禁用来源。
 - 心跳(#4)与自申请(#5) 维度重合在 `url.Alive` 一个字段上; 最终收敛由 beat/reactivate scheduler 协作保证。
-- admin-enable 后需 `ClearUrlSelfDeactivate(id)` 清 until — Application 层 invariant, 本次实施者在 `dao.UpdateUrlAlive(id, true)` 内部或者 router handler 里均摊。
+- admin-enable 与自申请的关系 — Application 层 invariant: 任何 admin-enable 操作都需 clear 自申请三字段。详见 error 表项「admin-enable 与自申请窗口冲突」。
 - self-deactivate key 生成: 首 GET `/self-deactivate/key?id` url 时若 `SelfDeactivateKey==''` 则 seed + 持久化, 随后 rotate。
- - xorm 1.4 `Sync2(&url{})` 对老 DB 自动 ALTER TABLE ADD COLUMN; 新增三列带 default, 不需要 migration script。
+- xorm 1.4 `Sync2(&url{})` 对老 DB 自动 ALTER TABLE ADD COLUMN; 新增三列带 default, 不需要 migration script。
