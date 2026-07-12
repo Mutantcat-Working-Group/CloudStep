@@ -6,6 +6,7 @@
 package scheduler
 
 import (
+	"com.mutantcat.cloud_step/alert"
 	"com.mutantcat.cloud_step/collection"
 	"com.mutantcat.cloud_step/dao"
 	"com.mutantcat.cloud_step/entity"
@@ -14,6 +15,7 @@ import (
 	"net/url"
 	"strconv"
 	"testing"
+	"time"
 )
 
 var seededId int
@@ -109,4 +111,54 @@ func fetchSeeded(t *testing.T) entity.Url {
 		t.Fatalf("seed read id=%d: has=%v err=%v", seededId, has, err)
 	}
 	return u
+}
+
+// drainAlertCh 清空全局 alert.EventCh(测试隔离用)。
+func drainAlertCh() {
+	for {
+		select {
+		case <-alert.EventCh:
+		default:
+			return
+		}
+	}
+}
+
+// TestBeat_FailingUrlEmitsDownEvent 验证连续失败达阈值下线后, 心跳向 alert channel 投递一条 DOWN 事件。
+func TestBeat_FailingUrlEmitsDownEvent(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	u, _ := url.Parse(srv.URL)
+	host, portStr := u.Hostname(), u.Port()
+	srv.Close() // 立刻关, 探活必 timeout
+
+	seedUrl(t, "hb-emit", "http://"+host+":"+portStr, 0)
+	path := "http://" + host + ":" + portStr
+
+	drainAlertCh()
+	for i := 0; i < failThreshold; i++ {
+		beat([]entity.Url{{Id: seededId, Parent: "hb-emit", Path: path, Alive: true, Retry: 0}})
+	}
+	got := fetchSeeded(t)
+	if got.Alive {
+		t.Fatalf("url should be down after %d failures", failThreshold)
+	}
+
+	// channel 里应收到且仅收到一条 DOWN 事件, id/path 与种子 URL 一致。
+	select {
+	case ev := <-alert.EventCh:
+		if ev.Id != seededId {
+			t.Fatalf("event id=%d want %d", ev.Id, seededId)
+		}
+		if ev.Kind != alert.KindDown {
+			t.Fatalf("event kind=%v want KindDown", ev.Kind)
+		}
+		if ev.Path != path {
+			t.Fatalf("event path=%q want %q", ev.Path, path)
+		}
+		if ev.Attempts != failThreshold {
+			t.Fatalf("event attempts=%d want %d", ev.Attempts, failThreshold)
+		}
+	case <-time.After(time.Second):
+		t.Fatalf("no DOWN alert event received on channel within 1s")
+	}
 }
