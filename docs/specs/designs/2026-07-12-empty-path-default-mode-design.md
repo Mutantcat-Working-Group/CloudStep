@@ -195,3 +195,16 @@ func GetSysConfigMirror() SystemConfig {
 - 默认集全部 URL 全死场景的 404 兜底行为, 依赖 `collection.GetPath` 现有 `filterAlive` 已修(见本次同期的 `fix(collection): GetPath/GetProxyPath skip dead URLs`)。
 - `util.ResolveWayCollection` 的 DB 读是 O(1) pk lookup, 无性能热点。未来若成热点再 cache。
 - **`GetSysConfigMirror()` 是本次新增的 `util/system_config.go` RLock 只读访问器**。现有 `GetSystemConfig()` 走 dao 层开 DB 事务, 调用频率虽低但 GetPath 是热路径, 故镜像只读是 right call。
+
+### 实施路径中的架构偏差 (import cycle)
+
+spec §4/`util/resolve_default.go` 的计划写法是 `util` 直接调 `dao.GetCollectionNameById`( plan `implementation-plans/2026-07-12-empty-path-default-mode.md` §Task 3 原文)。**Go 拒绝这一写法**:`util → dao` 经 `collection_dao.go util import` 形成 `dao → collection → util → dao` 循环,compile error `import cycle not allowed`。
+
+落地方式改为**resolver 注入**:
+
+- `util/resolve_default.go` 暴露包级变量 `defaultCollectionResolver func(int) string`,由 `SetDefaultCollection Resolver(fn)` 注入。`ResolveWayCollection` 仅调 resolver,不 import dao。
+- `dao/system_config_dao.go::InitSystemConfig` 在最后执行 `util.SetDefaultCollectionResolver(GetCollectionNameById)`。`InitSystemConfig` 由 `dao/orm_instance.go::init()` 启动时调用(在 ServeHTTP 之前),故首个 HTTP 请求到来时 resolver 已安装,**冷启动安全**。
+- 单测路径:`util/resolve_default_test.go` 直接 inject mock resolver(无 DB / 无 cwd 依赖);`dao/system_config_dao.go::UpdateSystemConfig` 的 id 校验路径另有集成测试通过 `InitSystemConfig` 注入的真实 `GetCollectionNameById` 覆盖。
+- 计划里的 `GetCollectionNameById` 调用语义 = `entity.Collection{ID}.Name`,通过 resolver 注入完全等价保留。
+
+`ResolveWayCollection(way, defaultId)` 的公开签名、行为契约与 spec §5 数据流图完全一致;仅 internal resolver 是老计划为了绕开 import cycle 的"最佳等价"实现。
