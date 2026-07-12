@@ -50,7 +50,7 @@ func UpdateSystemConfig(in entity.SystemConfig) bool {
 	if err := session.Begin(); err != nil {
 		return false
 	}
-	if _, err := session.Cols("allow_intranet_proxy", "self_default_collection_id", "agent_default_collection_id").ID(systemConfigId).Update(&in); err != nil {
+	if _, err := session.Cols("allow_intranet_proxy", "self_default_collection_id", "agent_default_collection_id", "ssl_enabled", "ssl_cert_path", "ssl_key_path", "ssl_port").ID(systemConfigId).Update(&in); err != nil {
 		session.Rollback()
 		return false
 	}

@@ -13,6 +13,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > README 清单 13 项中本轮完成 6 项(含此前在 main 上 1 项), 余下 SSL 证书支持(#7)实施中。
 
+### Added(SSL 证书支持)
+
+- 新增 `entity.SystemConfig` SSL 4 字段 `ssl_enabled`(bool 总开关, 默认 0) / `ssl_cert_path` / `ssl_key_path`(varchar 500) / `ssl_port`(int 默认 9443, 与 HTTP 9091 避让); `system_config` 表同步扩 4 列(`dao.UpdateSystemConfig` 显式 `Cols(...)` 写入)。
+- 改 `lifecycle/gin_service.go::StartGin`: 冷启动读 `util.GetSysConfigMirror()`,SSL 启用且 cert/key 路径均非空时主栈走 `ginServer.RunTLS(addr, cert, key)` HTTPS-only(端口 `SslPort`), 未启用行为与改造前一致 HTTP-only。**SSL 配置仅冷启动生效**, 管理员保存后需重启容器/进程; 启用后旧 HTTP 客户端需切到 HTTPS 端口。
+- 新增 `router.SslAdminRouter`(`GET /sslcerts` + `POST /sslcerts/update`, 均 LoginHandler 鉴权): 管理员查看/写入 SSL 配置; `enabled=true` 时校验 cert/key 路径非空 **且** 文件磁盘存在(`os.Stat`), 否则返 `code:1, msg:"cert or key file not found"` 不落库; 端口未填写回落 9443。路径原样透出到 admin(本身非 secret、仅 admin 可见)。
+- 新测试: `router/ssl_admin_test.go` 5 case(自签 ECDSA P-256 happy + missing-file + disallowed 空路径 + disabled-allowed + unauthenticated), stdlib 零依赖。
+- README `SSL 证书支持` 勾选 `[X]`。
+
 ### Added(manual enable/disable address)
 
 - 新增 `POST /url/enable` 与 `POST /url/disable`(均 LoginHandler 鉴权), 后台管理员可手动启停单条 URL。`enable` 同时复位 `url.retry = 0`;`disable` 不改 `retry`(累积计数用于心跳告警观察)。

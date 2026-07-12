@@ -90,4 +90,14 @@ type SystemConfig struct {
 
 	// AlertDebounceSec 同一 URL 同一 kind(UP/DOWN)的告警防抖窗口(秒), 默认 600。
 	AlertDebounceSec int `xorm:"notnull default(600)" json:"alertDebounceSec"`
+
+	// ---- SSL 证书支持(管理员配置 cert/key 路径起 HTTPS 入口) ----
+
+	// SSL 总开关: 启用后 StartGin 走 HTTPS-only(SslPort), 未启用行为与改造前一致。
+	SslEnabled bool `xorm:"notnull default(0)" json:"sslEnabled"`
+	// SSL 证书/私钥在宿主机的文件路径(由管理员配置, 容器内通过映射可达)。
+	SslCertPath string `xorm:"varchar(500) notnull default('')" json:"sslCertPath"`
+	SslKeyPath  string `xorm:"varchar(500) notnull default('')" json:"sslKeyPath"`
+	// HTTPS 监听端口, 默认 9443(与 HTTP 9091 避让)。
+	SslPort int `xorm:"notnull default(9443)" json:"sslPort"`
 }
