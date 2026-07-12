@@ -1,6 +1,35 @@
-# Local test artifacts
+# Local test artifacts(go test in each package dir spawns its own sqlite)
 cloud_step.db
 **/cloud_step.db
+**/*.db-journal
+
+# Go test binaries + coverage
+*.test
+*.out
+coverage.txt
+coverage.html
+*.mem
+*.cpu
+
+# Editor + OS
 .idea/
 *.log
 .DS_Store
+Thumbs.db
+.vscode/
+*.swp
+
+# Go workspace
+go.work
+go.work.sum
+
+# Build output
+dist/
+build/
+*.exe
+*.dll
+
+# Temp files
+*.tmp
+*.bak
+*~
