@@ -24,6 +24,8 @@ func (router *SettingRouter) InitRouter(context *gin.Engine) error {
 	context.POST("/url/add", LoginHandler(), addUrl)
 	context.POST("/url/update", LoginHandler(), updateUrl)
 	context.GET("/url/delete", LoginHandler(), deleteUrl)
+	context.POST("/url/enable", LoginHandler(), enableUrl)
+	context.POST("/url/disable", LoginHandler(), disableUrl)
 	// 自助的操作
 	context.GET("/selfhelp/get", LoginHandler(), getSelfHelp)
 	context.POST("/selfhelp/add", LoginHandler(), addSelfHelp)
@@ -309,6 +311,43 @@ func deleteUrl(c *gin.Context) {
 			"msg":  "error",
 		})
 	}
+}
+
+func enableUrl(c *gin.Context) {
+	id, ok := bindUrlId(c)
+	if !ok {
+		return
+	}
+	if dao.UpdateUrlAlive(id, true) {
+		c.JSON(200, gin.H{"code": 0, "msg": "success"})
+		return
+	}
+	c.JSON(200, gin.H{"code": 1, "msg": "error"})
+}
+
+func disableUrl(c *gin.Context) {
+	id, ok := bindUrlId(c)
+	if !ok {
+		return
+	}
+	if dao.UpdateUrlAlive(id, false) {
+		c.JSON(200, gin.H{"code": 0, "msg": "success"})
+		return
+	}
+	c.JSON(200, gin.H{"code": 1, "msg": "error"})
+}
+
+// bindUrlId 校验 JSON body 中的 id>0; 校验失败写 {"code":1} 并返回 (0, false).
+func bindUrlId(c *gin.Context) (int, bool) {
+	type body struct {
+		Id int `json:"id"`
+	}
+	var b body
+	if err := c.ShouldBindJSON(&b); err != nil || b.Id <= 0 {
+		c.JSON(200, gin.H{"code": 1, "msg": "error"})
+		return 0, false
+	}
+	return b.Id, true
 }
 
 func addSelfHelp(c *gin.Context) {
