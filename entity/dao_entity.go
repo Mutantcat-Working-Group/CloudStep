@@ -100,4 +100,23 @@ type SystemConfig struct {
 	SslKeyPath  string `xorm:"varchar(500) notnull default('')" json:"sslKeyPath"`
 	// HTTPS 监听端口, 默认 9443(与 HTTP 9091 避让)。
 	SslPort int `xorm:"notnull default(9443)" json:"sslPort"`
+
+	// ---- CORS(跨域) 安全收紧 ----
+
+	// CorsAllowedOrigins 后台允许的 Origin 白名单(逗号分隔)。
+	// 空字符串表示允许所有来源(向后兼容现有部署); 非空时仅列出的 origin 被允许,
+	// 其他 origin 的跨域请求被浏览器拦截。后台管理 API 通过 /sysconfig/update 配置。
+	CorsAllowedOrigins string `xorm:"varchar(1000) notnull default('')" json:"corsAllowedOrigins"`
+
+	// ---- 登录限速持久化 + 账户临时锁定 ----
+
+	// LoginMaxFail 每 LoginFailWindowSec 秒内允许的最大登录失败次数。
+	// 超过后账户在该窗口内被临时锁定(CouldLogin=false)。默认 10 次,与改造前行为一致。
+	LoginMaxFail int `xorm:"notnull default(10)" json:"loginMaxFail"`
+	// LoginFailWindowSec 登录失败计数窗口秒数。默认 180 秒(3 分钟)。
+	LoginFailWindowSec int `xorm:"notnull default(180)" json:"loginFailWindowSec"`
+	// LoginFailCount 当前窗口内的累计登录失败次数(由 util/login_times_util 写)。
+	LoginFailCount int `xorm:"notnull default(0)" json:"loginFailCount"`
+	// LoginFailWindowStart 当前窗口的起始时间(NULL 表示未启用)。
+	LoginFailWindowStart *time.Time `json:"loginFailWindowStart"`
 }

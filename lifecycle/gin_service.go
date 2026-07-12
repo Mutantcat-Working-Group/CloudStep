@@ -4,16 +4,33 @@ import (
 	"com.mutantcat.cloud_step/router"
 	"com.mutantcat.cloud_step/util"
 	"fmt"
+	"strings"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
-// 初始化Gin服务
+// InitGin 初始化 Gin 服务。
+// CORS 行为由 system_config.cors_allowed_origins 控制:
+//   - 空字符串(默认): 允许所有来源(向后兼容现有部署)。
+//   - 非空(逗号分隔): 仅列出的 origin 被允许, 其他跨域请求被浏览器拦截。
 func InitGin() *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 	ginServer := gin.Default()
+	cfg := util.GetSysConfigMirror()
 	config := cors.DefaultConfig()
-	config.AllowAllOrigins = true
+	if strings.TrimSpace(cfg.CorsAllowedOrigins) == "" {
+		config.AllowAllOrigins = true
+	} else {
+		// 拆分逗号分隔的白名单, 去除首尾空格。
+		origins := []string{}
+		for _, o := range strings.Split(cfg.CorsAllowedOrigins, ",") {
+			if t := strings.TrimSpace(o); t != "" {
+				origins = append(origins, t)
+			}
+		}
+		config.AllowOrigins = origins
+	}
 	config.AllowMethods = []string{"GET", "POST", "OPTIONS", "PUT"}
 	config.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Health-Info"}
 	ginServer.Use(cors.New(config))

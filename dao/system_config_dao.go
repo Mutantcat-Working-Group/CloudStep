@@ -5,6 +5,7 @@ import (
 	"com.mutantcat.cloud_step/util"
 	"log"
 	"strings"
+	"time"
 )
 
 const systemConfigId = 1
@@ -25,6 +26,8 @@ func InitSystemConfig() {
 	util.SetSystemConfigFromDao(cfg)
 	// 把 id→name 查询注入 util 的默认集解析器(避免 util import dao 形成循环)。
 	util.SetDefaultCollectionResolver(GetCollectionNameById)
+	// 首次启动时校验登录限速字段默认值(LoginMaxFail/WindowSec)。
+	EnsureLoginFailDefaults()
 }
 
 func GetSystemConfig() entity.SystemConfig {
@@ -138,4 +141,61 @@ func UpdateAlertConfig(in entity.SystemConfig) bool {
 	}
 	util.SetSystemConfigFromDao(merged)
 	return true
+}
+
+// RecordLoginFail 写 login_fail_count 列(+可选同时重置窗口起始时间)。
+// 实现登录限速持久化: count 写到 DB + 同步 util 镜像。
+// 调用方: util.CouldLogin(检查+累加) / ClearHotNum(清零)。
+func RecordLoginFail(count int, windowStart *time.Time) bool {
+	in := entity.SystemConfig{LoginFailCount: count}
+	if windowStart != nil {
+		in.LoginFailWindowStart = windowStart
+	}
+	in.Id = systemConfigId
+	session := PublicEngine.NewSession()
+	defer session.Close()
+	if err := session.Begin(); err != nil {
+		return false
+	}
+	if _, err := session.Cols("login_fail_count", "login_fail_window_start").ID(systemConfigId).Update(&in); err != nil {
+		session.Rollback()
+		return false
+	}
+	if err := session.Commit(); err != nil {
+		session.Rollback()
+		return false
+	}
+	util.SetSystemConfigFromDao(GetSystemConfig())
+	return true
+}
+
+// ResetLoginFailCount 清零 login_fail_count + 关闭窗口(ClearHotNum 调用)。
+func ResetLoginFailCount() bool {
+	return RecordLoginFail(0, nil)
+}
+
+// EnsureLoginFailDefaults 与 InitSystemConfig 保持一致的启动校验:
+// 当 LoginMaxFail/Window 字段为首次扩列(默认值 0)时, 赋予合理默认值(10/180)。
+// 挂 InitSystemConfig 尾部, 不影响已存在的正确配置。
+func EnsureLoginFailDefaults() {
+	cfg := GetSystemConfig()
+	changed := false
+	if cfg.LoginMaxFail == 0 {
+		cfg.LoginMaxFail = 10
+		changed = true
+	}
+	if cfg.LoginFailWindowSec == 0 {
+		cfg.LoginFailWindowSec = 180
+		changed = true
+	}
+	if changed {
+		session := PublicEngine.NewSession()
+		defer session.Close()
+		if err := session.Begin(); err != nil {
+			return
+		}
+		session.Cols("login_max_fail", "login_fail_window_sec").ID(systemConfigId).Update(&cfg)
+		session.Commit()
+		util.SetSystemConfigFromDao(cfg)
+	}
 }

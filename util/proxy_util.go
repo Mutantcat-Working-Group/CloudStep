@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"io"
+	"log"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"strings"
 )
+
 
 func Proxy(targetURL string, c *gin.Context) {
 	proxyUrl, err := url.Parse(targetURL)
@@ -71,8 +73,9 @@ func RootProxy(targetURL string, c *gin.Context) error {
 
 	// 在处理请求头/体前先做 SSRF 校验,拒绝则直接返回
 	if blockedReason, err := checkIntranetBlocked(targetURL); blockedReason != "" {
-		c.JSON(http.StatusForbidden, gin.H{"code": 403, "msg": "禁止代理到" + blockedReason + "地址"})
-		return err
+		log.Printf("[proxy] blocked target=%s reason=%s err=%v", targetURL, blockedReason, err)
+		c.JSON(http.StatusForbidden, gin.H{"code": 403, "msg": "禁止代理到该目标地址"})
+		return fmt.Errorf("ssrf blocked")
 	}
 
 	// 获取用户请求的请求头
@@ -90,7 +93,7 @@ func RootProxy(targetURL string, c *gin.Context) error {
 	// 创建新的请求
 	req, err := http.NewRequest(c.Request.Method, targetURL, strings.NewReader(requestBody))
 	if err != nil {
-		c.String(http.StatusInternalServerError, "Error creating request: "+err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "msg": sanitizeError(err, "create request")})
 		return fmt.Errorf("创建代理请求失败")
 	}
 
@@ -105,7 +108,7 @@ func RootProxy(targetURL string, c *gin.Context) error {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		c.String(http.StatusInternalServerError, "Error sending request: "+err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "msg": sanitizeError(err, "send request to "+RedactTarget(targetURL))})
 		return fmt.Errorf("发送代理请求失败")
 	}
 	defer resp.Body.Close()
@@ -113,12 +116,31 @@ func RootProxy(targetURL string, c *gin.Context) error {
 	// 返回响应给客户端
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		c.String(http.StatusInternalServerError, "Error reading response: "+err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "msg": sanitizeError(err, "read response")})
 		return fmt.Errorf("返回响应失败")
 	}
 	c.String(http.StatusOK, string(body))
 	return nil
 }
+
+// RedactTarget 脱敏代理目标 URL 的 host 部分(仅暴露 scheme + 端口,隐藏 host/ip)。
+func RedactTarget(targetURL string) string {
+	if u, err := url.Parse(targetURL); err == nil && u.Host != "" {
+		return u.Scheme + "://<redacted>:" + u.Port() + u.Path
+	}
+	return "<invalid-target>"
+}
+
+// sanitizeError 清理 err.Error() 避免内部信息泄露(文件路径、IP、栈等)。
+// 返回统一对外文案;detail 仅传入 log 不返客户端。
+func sanitizeError(err error, detail string) string {
+	if err != nil {
+		log.Printf("[proxy] %s: %v", detail, err)
+	}
+	return "请求处理失败"
+}
+
+
 
 // checkIntranetBlocked 在管理员关闭内网代理时,拒绝代理到私有/回环/未指定地址。
 // 返回空字符串表示放行;否则返回被拒原因与一个非 nil 的 error。
