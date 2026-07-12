@@ -328,6 +328,35 @@ func SetUrlSelfDeactivate(id int, until time.Time, attempts int) bool {
 	return true
 }
 
+// SetUrlDeactivateAttempts 单独改 self_deactivate_attempts 列(供 reactivate scheduler),
+// 同步 cache. url miss / tx err 返 false.
+func SetUrlDeactivateAttempts(id int, attempts int) bool {
+	session := PublicEngine.NewSession()
+	defer session.Close()
+	if err := session.Begin(); err != nil {
+		return false
+	}
+	if _, err := session.Cols("self_deactivate_attempts").ID(id).Update(&entity.Url{SelfDeactivateAttempts: attempts}); err != nil {
+		session.Rollback()
+		return false
+	}
+	if err := session.Commit(); err != nil {
+		session.Rollback()
+		return false
+	}
+	collection.MWorkCllection.Lock()
+	for coll, urls := range collection.WorkCllection {
+		for i := range urls {
+			if urls[i].Id == id {
+				collection.WorkCllection[coll][i].SelfDeactivateAttempts = attempts
+				break
+			}
+		}
+	}
+	collection.MWorkCllection.Unlock()
+	return true
+}
+
 // ClearUrlSelfDeactivate 清 self_deactivate_until(=NULL) + self_deactivate_attempts(=0),
 // 同步 cache. url miss / tx err 返 false.
 func ClearUrlSelfDeactivate(id int) bool {
