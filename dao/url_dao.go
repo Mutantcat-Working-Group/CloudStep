@@ -135,3 +135,45 @@ func UpdateUrlById(id int, url string) bool {
 	}
 	return true
 }
+
+// UpdateUrlAlive sets alive flag of url by id.
+//
+//	alive=true : alive=true, retry=0
+//	alive=false: alive=false, retry unchanged
+//
+// Writes DB (transaction) + cache. Returns false if id missing or tx err.
+func UpdateUrlAlive(id int, alive bool) bool {
+	session := PublicEngine.NewSession()
+	defer session.Close()
+	if err := session.Begin(); err != nil {
+		return false
+	}
+	var err error
+	var affected int64
+	if alive {
+		affected, err = session.Cols("alive", "retry").ID(id).Update(&entity.Url{Alive: true, Retry: 0})
+	} else {
+		affected, err = session.Cols("alive").ID(id).Update(&entity.Url{Alive: false})
+	}
+	if err != nil || affected == 0 {
+		session.Rollback()
+		return false
+	}
+	if err := session.Commit(); err != nil {
+		session.Rollback()
+		return false
+	}
+	collection.MWorkCllection.Lock()
+	for coll, urls := range collection.WorkCllection {
+		for i := range urls {
+			if urls[i].Id == id {
+				collection.WorkCllection[coll][i].Alive = alive
+				if alive {
+					collection.WorkCllection[coll][i].Retry = 0
+				}
+			}
+		}
+	}
+	collection.MWorkCllection.Unlock()
+	return true
+}

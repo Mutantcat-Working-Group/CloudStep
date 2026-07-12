@@ -21,6 +21,8 @@ func resetUrlCaches() {
 }
 
 func insertUrl(id int, coll, path string, alive bool, retry int) {
+	// 清空该槽位,保证测试确定性且可重复运行(不依赖 DB 初始状态)
+	PublicEngine.ID(id).Delete(&entity.Url{})
 	u := entity.Url{Id: id, Parent: coll, Path: path, Alive: alive, Retry: retry}
 	if _, err := PublicEngine.Insert(&u); err != nil {
 		panic(err)
