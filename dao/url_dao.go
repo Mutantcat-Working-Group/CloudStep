@@ -3,6 +3,9 @@ package dao
 import (
 	"com.mutantcat.cloud_step/collection"
 	"com.mutantcat.cloud_step/entity"
+	"com.mutantcat.cloud_step/util"
+	"errors"
+	"time"
 )
 
 // 获得Parent为某个集合的url
@@ -201,6 +204,140 @@ func UpdateUrlRetry(id int, targetRetry int) bool {
 		for i := range urls {
 			if urls[i].Id == id {
 				collection.WorkCllection[coll][i].Retry = targetRetry
+				break
+			}
+		}
+	}
+	collection.MWorkCllection.Unlock()
+	return true
+}
+
+// GetUrl 按 id 读取单行 url. miss 返 (zero, false).
+func GetUrl(id int) (entity.Url, bool) {
+	var u entity.Url
+	has, err := PublicEngine.ID(id).Get(&u)
+	if err != nil || !has {
+		return entity.Url{}, false
+	}
+	return u, true
+}
+
+// GenerateAndSaveUrlKey 返回 url id 的当前自申请密钥; url 不存在返 ("", err).
+// 首次读取(SelfDeactivateKey=="")时 RandToken(32) 落库+cache 后返回.
+func GenerateAndSaveUrlKey(id int) (string, error) {
+	return rotateUrlKey(id, false)
+}
+
+// RotateUrlKey 强制重新生成 url id 的自申请密钥并落库+cache 后返回; url 不存在返 ("", err).
+func RotateUrlKey(id int) (string, error) {
+	return rotateUrlKey(id, true)
+}
+
+// rotateUrlKey 内部实现: force=false 表示 key 已存在则跳过, force=true 强制 regen.
+func rotateUrlKey(id int, force bool) (string, error) {
+	u, ok := GetUrl(id)
+	if !ok {
+		return "", errors.New("url not found")
+	}
+	if !force && u.SelfDeactivateKey != "" {
+		return u.SelfDeactivateKey, nil
+	}
+	token := util.RandToken(32)
+	if token == "" {
+		return "", errors.New("rand token empty")
+	}
+	if !saveUrlSelfDeactivateKey(id, token) {
+		return "", errors.New("update key failed")
+	}
+	return token, nil
+}
+
+// saveUrlSelfDeactivateKey 写 self_deactivate_key 单列并同步 cache.
+func saveUrlSelfDeactivateKey(id int, key string) bool {
+	session := PublicEngine.NewSession()
+	defer session.Close()
+	if err := session.Begin(); err != nil {
+		return false
+	}
+	affected, err := session.Cols("self_deactivate_key").ID(id).Update(&entity.Url{SelfDeactivateKey: key})
+	if err != nil || affected == 0 {
+		session.Rollback()
+		return false
+	}
+	if err := session.Commit(); err != nil {
+		session.Rollback()
+		return false
+	}
+	collection.MWorkCllection.Lock()
+	for coll, urls := range collection.WorkCllection {
+		for i := range urls {
+			if urls[i].Id == id {
+				collection.WorkCllection[coll][i].SelfDeactivateKey = key
+				break
+			}
+		}
+	}
+	collection.MWorkCllection.Unlock()
+	return true
+}
+
+// SetUrlSelfDeactivate 事务写 self_deactivate_until + self_deactivate_attempts
+// 两列并同步 cache. url miss / tx err 返 false.
+func SetUrlSelfDeactivate(id int, until time.Time, attempts int) bool {
+	session := PublicEngine.NewSession()
+	defer session.Close()
+	if err := session.Begin(); err != nil {
+		return false
+	}
+	u := entity.Url{SelfDeactivateUntil: &until, SelfDeactivateAttempts: attempts}
+	affected, err := session.Cols("self_deactivate_until", "self_deactivate_attempts").ID(id).Update(&u)
+	if err != nil || affected == 0 {
+		session.Rollback()
+		return false
+	}
+	if err := session.Commit(); err != nil {
+		session.Rollback()
+		return false
+	}
+	collection.MWorkCllection.Lock()
+	for coll, urls := range collection.WorkCllection {
+		for i := range urls {
+			if urls[i].Id == id {
+				collection.WorkCllection[coll][i].SelfDeactivateAttempts = attempts
+				untilCopy := until
+				collection.WorkCllection[coll][i].SelfDeactivateUntil = &untilCopy
+				break
+			}
+		}
+	}
+	collection.MWorkCllection.Unlock()
+	return true
+}
+
+// ClearUrlSelfDeactivate 清 self_deactivate_until(=NULL) + self_deactivate_attempts(=0),
+// 同步 cache. url miss / tx err 返 false.
+func ClearUrlSelfDeactivate(id int) bool {
+	session := PublicEngine.NewSession()
+	defer session.Close()
+	if err := session.Begin(); err != nil {
+		return false
+	}
+	u := entity.Url{SelfDeactivateUntil: nil, SelfDeactivateAttempts: 0}
+	affected, err := session.Cols("self_deactivate_until", "self_deactivate_attempts").ID(id).Update(&u)
+	if err != nil || affected == 0 {
+		session.Rollback()
+		return false
+	}
+	if err := session.Commit(); err != nil {
+		session.Rollback()
+		return false
+	}
+	collection.MWorkCllection.Lock()
+	for coll, urls := range collection.WorkCllection {
+		for i := range urls {
+			if urls[i].Id == id {
+				collection.WorkCllection[coll][i].SelfDeactivateUntil = nil
+				collection.WorkCllection[coll][i].SelfDeactivateAttempts = 0
 				break
 			}
 		}

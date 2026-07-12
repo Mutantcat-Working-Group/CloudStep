@@ -335,6 +335,8 @@ func enableUrl(c *gin.Context) {
 		return
 	}
 	if dao.UpdateUrlAlive(id, true) {
+		// spec §5 admin-enable invariant: 管理员 enable 一出, 立刻销毁自申请窗口
+		dao.ClearUrlSelfDeactivate(id)
 		c.JSON(200, gin.H{"code": 0, "msg": "success"})
 		return
 	}

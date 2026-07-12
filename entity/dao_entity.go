@@ -1,5 +1,7 @@
 package entity
 
+import "time"
+
 type Collection struct {
 	Id   int    `xorm:"pk autoincr"`
 	Name string `xorm:"varchar(200) notnull"`
@@ -33,6 +35,11 @@ type Url struct {
 	Path   string `xorm:"varchar(200) notnull" json:"address"` // 路径
 	Alive  bool   `xorm:"notnull" json:"alive"`                // 是否存活
 	Retry  int    `xorm:"notnull" json:"retry"`                // 重试次数
+
+	// 服务器携密钥自申请停用(可指定时间): F1-F6 扩展列
+	SelfDeactivateKey      string     `xorm:"varchar(200) notnull default('')" json:"selfDeactivateKey"`
+	SelfDeactivateUntil    *time.Time `json:"selfDeactivateUntil"` // 到期时间, NULL = 无在用自申请(xorm 无 notnull → NULLable 列)
+	SelfDeactivateAttempts int        `xorm:"notnull default(0)" json:"selfDeactivateAttempts"`
 }
 
 type User struct {
