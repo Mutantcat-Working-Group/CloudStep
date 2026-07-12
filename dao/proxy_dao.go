@@ -3,6 +3,7 @@ package dao
 import (
 	"com.mutantcat.cloud_step/collection"
 	"com.mutantcat.cloud_step/entity"
+	"com.mutantcat.cloud_step/util"
 )
 
 // 获得所有代理
@@ -32,6 +33,9 @@ func AddProxy(proxy entity.Proxy) bool {
 	proxy.Id = 0
 	proxy.Index = 0
 	proxy.AliveNum = 0
+	if proxy.Salt == "" {
+		proxy.Salt = util.RandToken(32)
+	}
 	session := PublicEngine.NewSession()
 	defer session.Close()
 	err := session.Begin()

@@ -56,14 +56,30 @@ func getSysConfig(c *gin.Context) {
 
 func updateSysConfig(c *gin.Context) {
 	type body struct {
-		AllowIntranetProxy bool `json:"allowIntranetProxy"`
+		AllowIntranetProxy      bool `json:"allowIntranetProxy"`
+		SelfDefaultCollectionId  int  `json:"selfDefaultCollectionId"`
+		AgentDefaultCollectionId int  `json:"agentDefaultCollectionId"`
 	}
 	var b body
 	if c.ShouldBindJSON(&b) != nil {
 		c.JSON(200, gin.H{"code": 1, "msg": "参数错误"})
 		return
 	}
-	if dao.UpdateSystemConfig(entity.SystemConfig{AllowIntranetProxy: b.AllowIntranetProxy}) {
+	// 校验 default id 指向存在的 collection(0 表示"清除默认", 合法)。
+	if b.SelfDefaultCollectionId > 0 && dao.GetCollectionNameById(b.SelfDefaultCollectionId) == "" {
+		c.JSON(200, gin.H{"code": 1, "msg": "参数错误", "desc": "selfDefaultCollectionId not found"})
+		return
+	}
+	if b.AgentDefaultCollectionId > 0 && dao.GetCollectionNameById(b.AgentDefaultCollectionId) == "" {
+		c.JSON(200, gin.H{"code": 1, "msg": "参数错误", "desc": "agentDefaultCollectionId not found"})
+		return
+	}
+	// 透传完整三个字段, 避免全量 SystemConfig 镜像把另外两个 default id 零擦。
+	if dao.UpdateSystemConfig(entity.SystemConfig{
+		AllowIntranetProxy:      b.AllowIntranetProxy,
+		SelfDefaultCollectionId:  b.SelfDefaultCollectionId,
+		AgentDefaultCollectionId: b.AgentDefaultCollectionId,
+	}) {
 		c.JSON(200, gin.H{"code": 0, "msg": "success"})
 		return
 	}
@@ -319,6 +335,8 @@ func enableUrl(c *gin.Context) {
 		return
 	}
 	if dao.UpdateUrlAlive(id, true) {
+		// spec §5 admin-enable invariant: 管理员 enable 一出, 立刻销毁自申请窗口
+		dao.ClearUrlSelfDeactivate(id)
 		c.JSON(200, gin.H{"code": 0, "msg": "success"})
 		return
 	}

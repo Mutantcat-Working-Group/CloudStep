@@ -1,29 +1,32 @@
 package util
 
-import "sync"
-
-// systemConfig 保存运行时的系统级开关,作为 DB 的内存镜像以便热更新时读取。
-type systemConfig struct {
-	// AllowIntranetProxy 是否允许反代理目标为私有/内网/回环/链路本地地址。
-	// 部署于公网时建议关闭,默认 true 以保留内网智能家居等场景。
-	AllowIntranetProxy bool
-}
-
-var (
-	sysCfg     = systemConfig{AllowIntranetProxy: true}
-	sysCfgMu   sync.RWMutex
+import (
+	"com.mutantcat.cloud_step/entity"
+	"sync"
 )
 
-// SetAllowIntranetProxy 更新反代内网允许开关。
-func SetAllowIntranetProxy(allow bool) {
+// sysCfg 是 entity.SystemConfig 的内存镜像,热路径读取绕过 DB。
+var (
+	sysCfg   = entity.SystemConfig{AllowIntranetProxy: true}
+	sysCfgMu sync.RWMutex
+)
+
+// SetSystemConfigFromDao 由 InitSystemConfig 与 updateSysConfig 成功后调用,
+// 把最新 DB 值整块替换进镜像。
+func SetSystemConfigFromDao(c entity.SystemConfig) {
 	sysCfgMu.Lock()
 	defer sysCfgMu.Unlock()
-	sysCfg.AllowIntranetProxy = allow
+	sysCfg = c
 }
 
-// AllowIntranet 查询当前是否允许代理到内网/私有地址。
-func AllowIntranet() bool {
+// GetSysConfigMirror 只读返回当前镜像(RLock 保护)。热路径用。
+func GetSysConfigMirror() entity.SystemConfig {
 	sysCfgMu.RLock()
 	defer sysCfgMu.RUnlock()
-	return sysCfg.AllowIntranetProxy
+	return sysCfg
+}
+
+// AllowIntranet 是否允许代理到内网(向后兼容入口)。
+func AllowIntranet() bool {
+	return GetSysConfigMirror().AllowIntranetProxy
 }

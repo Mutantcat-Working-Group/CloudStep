@@ -25,6 +25,9 @@ func (router *SelfHelpRouter) DestroyRouter() error {
 
 func selfhelp(c *gin.Context) {
 	way := util.GetWayParam(c)
+	if SaltInjector(c, way) {
+		return
+	}
 	if way == "" {
 		c.JSON(200, gin.H{
 			"code": 404,

@@ -20,6 +20,14 @@ func filterAlive(urls []entity.Url) []entity.Url {
 
 // 通过way获得路径
 func GetPath(way string) string {
+	// 默认配置兜底: way 缺失时, 使用 system_config 里配置的默认映射集名称替换 way。
+	if way == "" {
+		if resolved, ok := util.ResolveWayCollection(way, util.GetSysConfigMirror().SelfDefaultCollectionId); ok {
+			way = resolved
+		} else {
+			return ""
+		}
+	}
 	MWorkCllection.Lock()
 	MSelfHelpMode.Lock()
 	defer MSelfHelpMode.Unlock()

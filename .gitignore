@@ -1,2 +1,6 @@
-# Local implementation plans (project-specific, not tracked)
-implementation-plans/
+# Local test artifacts
+cloud_step.db
+**/cloud_step.db
+.idea/
+*.log
+.DS_Store

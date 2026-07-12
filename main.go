@@ -12,10 +12,14 @@ func main() {
 	lifecycle.RegisterRouter(gin, &router.WebRouter{},
 		&router.LoginRouter{},
 		&router.SelfHelpRouter{},
+		&router.SelfDeactivateRouter{},
 		&router.ProxyRouter{},
 		&router.PingRouter{},
 		&router.SettingRouter{},
 		&router.SelfHelpListRouter{},
+		&router.SaltAdminRouter{},
+		&router.AlertAdminRouter{},
+		&router.SslAdminRouter{},
 	)
 	lifecycle.StartGin(gin, "9091")
 }

@@ -9,6 +9,78 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Dependency upgrades (安全/漏洞防线)
 
+## [unreleased] 2026-07-12(本轮在 feat/empty-path-default-mode 分支上实施, 尚未 merge 回 main)
+
+> README 清单 13 项中本轮完成 6 项(含此前在 main 上 1 项), 余下 SSL 证书支持(#7)实施中。
+
+### Added(SSL 证书支持)
+
+- 新增 `entity.SystemConfig` SSL 4 字段 `ssl_enabled`(bool 总开关, 默认 0) / `ssl_cert_path` / `ssl_key_path`(varchar 500) / `ssl_port`(int 默认 9443, 与 HTTP 9091 避让); `system_config` 表同步扩 4 列(`dao.UpdateSystemConfig` 显式 `Cols(...)` 写入)。
+- 改 `lifecycle/gin_service.go::StartGin`: 冷启动读 `util.GetSysConfigMirror()`,SSL 启用且 cert/key 路径均非空时主栈走 `ginServer.RunTLS(addr, cert, key)` HTTPS-only(端口 `SslPort`), 未启用行为与改造前一致 HTTP-only。**SSL 配置仅冷启动生效**, 管理员保存后需重启容器/进程; 启用后旧 HTTP 客户端需切到 HTTPS 端口。
+- 新增 `router.SslAdminRouter`(`GET /sslcerts` + `POST /sslcerts/update`, 均 LoginHandler 鉴权): 管理员查看/写入 SSL 配置; `enabled=true` 时校验 cert/key 路径非空 **且** 文件磁盘存在(`os.Stat`), 否则返 `code:1, msg:"cert or key file not found"` 不落库; 端口未填写回落 9443。路径原样透出到 admin(本身非 secret、仅 admin 可见)。
+- 新测试: `router/ssl_admin_test.go` 5 case(自签 ECDSA P-256 happy + missing-file + disallowed 空路径 + disabled-allowed + unauthenticated), stdlib 零依赖。
+- README `SSL 证书支持` 勾选 `[X]`。
+
+### Added(manual enable/disable address)
+
+- 新增 `POST /url/enable` 与 `POST /url/disable`(均 LoginHandler 鉴权), 后台管理员可手动启停单条 URL。`enable` 同时复位 `url.retry = 0`;`disable` 不改 `retry`(累积计数用于心跳告警观察)。
+- 新增 `dao.UrlDao::UpdateUrlAlive(id int, alive bool) bool`: 事务写 `url.alive` + `url.retry`(enable 时清零), 同步内存 `WorkCllection` 缓存; 供手动启停与心跳共用同一写入链路, 彻底从根源解决 DB / cache 不一致。
+- 扩展 `GET /collection/geturls` 返回的 `url` JSON 透出 `id / parent / address / alive / retry` 字段, 后台可观察 URL 健康状态与失败计数(本次 `/slist` 已前置透出, 本次再为 `/collection/geturls` 打通)。
+- 新测试: `dao/url_state_test.go` (5 个 case, 含 self/proxy/unknown/emptyCollection/collision 路径)。
+
+### Added(自动启停心跳)
+
+- 新增 `scheduler/heartbeat_scheduler.go`: 每 60s 对所有 `Alive=true` 的 URL 并发 TCP 500ms 探活(`util.GetTCPSpeed`); 失败 → `url.retry + 1`; 达 N=3 → 调 `dao.UpdateUrlAlive(id, false)` 下线 + stderr 事件日志 `[heartbeat] url id=... set ALIVE=false after N failures`; 成功 → `url.retry` 清零。管理员手动禁用的 URL(`Alive=false` 无论来源)一拍全跳过, 心跳**只摘不复活**, 与手动启停互不踩。
+- 新增 `dao.UrlDao::UpdateUrlRetry(id int, targetRetry int) bool`: 写入 `url.retry` 字段到目标值(幂等, 已等值省 IO), 同步 `WorkCllection` 缓存; 心跳失败/成功两条路径复用同一函数(targetRetry 由调用方针算)。心跳计数器跨重启持久(`url.Retry` 字段落盘), 比纯内存重启清零更贴「故障持续」现场语义。
+- 新注册到 `scheduler/scheduler_register.go`。符合 antlabs timer `ScheduleFunc(dur, fn)` 节奏。
+- 新测试: `scheduler/heartbeat_scheduler_test.go` (2 个 case: 探活成功清零 + 连续 failThreshold 次探失败下线), 本地 httptest server 隔离。
+
+### Added(空路径默认模式)
+
+- `GET /sysconfig/get` 响应新增两个字段 `selfDefaultCollectionId` / `agentDefaultCollectionId`(`int`, 0 表示未配置)。
+- `POST /sysconfig/update` 请求体扩同两字段: id>0 时校验 `collection` 表存在, 不存在返 `code:1, desc:"... not found"`; id=0 视为"清除默认"。
+- `GetPath` / `GetProxyPath` 顶部新增兜底逻辑: `way==""` → 通过新增 `util.ResolveWayCollection(way, defaultId)` helper 落到对应默认映射集; `way` 有值完全不读默认配置, 现有契约零破。
+- `self_help_mode.go::filterAlive` / `proxy_mode.go::filterProxyAlive`(Go 拒绝同 package 同名 helper,故两名)跳过 `Alive=false` 条目; 全死返 `""` → handler 返 `code:404`。`/slist` 列表端点 unchanged(列表为 debug view)。
+- `entity.SystemConfig` 加两个字段; `util/system_config.go` 重构为持有 `entity.SystemConfig` 镜像加 RLock 只读访问器 `GetSysConfigMirror()`(热路径绕过 DB); `AllowIntranet()` 向后兼容 shim 保 `./ip.go` 单调用点 unchanged。
+- 新 helper `util.ResolveWayCollection`: 通过 resolver 注入模式(不在 `util → dao` 形成 circle; `dao.SetDefaultCollectionResolver(GetCollectionNameById)` 在 `InitSystemConfig` 冷启动注入)查 collection 名。新测试 `util/resolve_default_test.go` (mock resolver, 4 case)。
+- `lifecycle/RegisterRouter` 入参追加 `&router.SelfHelpListRouter{}`。
+- 新测试: `collection/slist_test.go` (`GetSelfHelpList` 5 case) / `collection/url_state_read_test.go` (`GetPath` / `GetProxyPath` 4 case) / `util/system_config_test.go` (1 case) / `router/slist_router_test.go` (5 case Any-verb + query/path 全绑定)。
+
+### Added(服务器携密钥自申请停用——设计已定, 本轮实施待完成)
+
+- 设计见 `docs/specs/designs/2026-07-12-self-deactivate-design.md`。spec 定稿:URL 粒度 per-URL 密钥(存库, `crypto/rand`);`url` 表扩 3 列 `self_deactivate_key` / `self_deactivate_until`(`timestamp NULL`) / `self_deactivate_attempts`;新增 4 handler `POST /self-deactivate` `POST /self-activate` (key-gated) + `GET /self-deactivate/key` `POST /self-deactivate/key/rotate` (Login admin);scheduler `registerReactivate` 每 60s 到期自动恢复 + 阻尼 3 次连续心跳失败后放弃并清 `until`(locking URL 为 admin-effect, 需管理员介入)。
+- 本轮仅完成 design spec (commit `c3ce3ff`); 实现 + 测试 + README 勾选待 next session 实施。
+
+### Added(scheduler: self-deactivate expiry + recovery damping)(本轮新建)
+
+- 新增 `scheduler/reactivate_scheduler.go` 注册到 `scheduler_register.go`: 每 60s 扫 `url` 表找 `alive=false AND self_deactivate_until IS NOT NULL AND self_deactivate_until <= now()` 的 URL。连续恢复-心跳 down 循环 3 次(reactivateGiveUpAttempts=3)后阻尼收敛: 清 `self_deactivate_until` 并锁定 URL 为 admin-effect 禁用,需管理员介入。
+- 新增 `dao.UrlDao::SetUrlDeactivateAttempts(id, attempts) bool`: 独占改 `url` 字段 `self_deactivate_attempts`, 同步 `WorkCllection` 缓存。
+- 新测试 `scheduler/reactivate_scheduler_test.go` 1 case, 验证到期恢复 + attempts 递增 + 阻尼阈值收敛路径。
+
+### Fixed
+
+- **fatal 修**`lifecycle/gin_service.go::StartGin` 不再阻塞于 HTTPS listen。实现: 先启 HTTPS goroutine + 再启 HTTP。
+- **fatal 修**`util/params_util.go::GetWayParam`: GET 空 body 不再无条件 `c.BindJSON`, 避免 gin v1.12+ 提前写入 400 response。
+
+### Fixed(manual enable/disable address + heartbeat)
+
+### Security
+
+- `entity system_config` 新字段 id 写入前背调 `dao.GetCollectionNameById`, 不存在返错; 防止管理员误配导致默认集为 dangling id 后默默 404。
+- 手动启停端点 `/url/enable` / `/url/disable` 走 `LoginHandler` 鉴权, 未登录一律 `code:1,msg:"未登录"`。
+- 心跳探活节拍 + 阈值 + 并发: 百级 URL 单次 beat 嵌 60s 节拍安全, 无 goroutine leak via `sync.WaitGroup`。
+
+### Changed
+
+- **`/slist` 是公开端点(无 LoginHandler), 返回完整 URL 数组供frontend 做自助负载均衡决策**, 契约对齐 README 三的「自助模式」§3 节意图。
+- `util/ping_util.go::GetTCPSpeed` 本轮被复用两次(手动 Ping 端点 + 心跳), util 生态一致性提升。
+
+---
+
+## [1.0.20260711] - 2026-07-11
+
+### Dependency upgrades (安全/漏洞防线)
+
 - `github.com/gin-gonic/gin` v1.9.1 → **v1.12.0**(次要版本升级,基础 API 保持向后兼容)。
 - `github.com/gin-contrib/cors` v1.7.0 → **v1.7.7**。
 - `github.com/mattn/go-sqlite3` v1.14.22 → **v1.14.47**(捆绑的 SQLite C 库更新,覆盖多个上游 CVE)。

@@ -20,6 +20,14 @@ func filterProxyAlive(urls []entity.Url) []entity.Url {
 }
 
 func GetProxyPath(way string) string {
+	// 默认配置兜底: way 缺失时, 使用 system_config 里配置的默认映射集名称替换 way。
+	if way == "" {
+		if resolved, ok := util.ResolveWayCollection(way, util.GetSysConfigMirror().AgentDefaultCollectionId); ok {
+			way = resolved
+		} else {
+			return ""
+		}
+	}
 	MWorkCllection.Lock()
 	MProxyMode.Lock()
 	defer MProxyMode.Unlock()
