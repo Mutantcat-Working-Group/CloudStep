@@ -16,6 +16,7 @@ type Proxy struct {
 	ProxyMode string `json:"proxyMode"` // 代理模式: 根代理、子代理
 	Index     int    `json:"index"`     // 当前映射集的索引(用于轮询模式)
 	AliveNum  int    `json:"aliveNum"`  // 存活的路径数
+	Salt      string `xorm:"varchar(200) notnull default('')" json:"salt"` // 请求层 HMAC 密钥(空表示不校验)
 }
 
 type SelfHelp struct {
@@ -26,6 +27,7 @@ type SelfHelp struct {
 	Mode     string `json:"mode"`     // 当前模式: 轮询、随机
 	Index    int    `json:"index"`    // 当前映射集的索引(用于轮询模式)
 	AliveNum int    `json:"aliveNum"` // 存活的路径数
+	Salt     string `xorm:"varchar(200) notnull default('')" json:"salt"` // 请求层 HMAC 密钥(空表示不校验)
 }
 
 // 路径

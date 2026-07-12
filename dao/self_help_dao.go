@@ -3,6 +3,7 @@ package dao
 import (
 	"com.mutantcat.cloud_step/collection"
 	"com.mutantcat.cloud_step/entity"
+	"com.mutantcat.cloud_step/util"
 )
 
 func GetAllSelfHelps() []entity.SelfHelp {
@@ -18,6 +19,9 @@ func AddSelfHelp(self entity.SelfHelp) bool {
 	self.Id = 0
 	self.Index = 0
 	self.AliveNum = 0
+	if self.Salt == "" {
+		self.Salt = util.RandToken(32)
+	}
 	session := PublicEngine.NewSession()
 	defer session.Close()
 	err := session.Begin()
@@ -147,4 +151,61 @@ func CheckNameExistExceptId(name string, id int) bool {
 		return false
 	}
 	return has
+}
+
+// GetSaltForWay 按 way 查找坐标(shell 优先、proxy 其次),返回其 salt 与所属模式。
+// found 为 false 表示该 way 在两张表中均不存在。
+func GetSaltForWay(way string) (salt string, mode string, found bool) {
+	var self entity.SelfHelp
+	has, err := PublicEngine.Where("way = ?", way).Get(&self)
+	if err == nil && has {
+		return self.Salt, "self", true
+	}
+	var proxy entity.Proxy
+	has, err = PublicEngine.Where("way = ?", way).Get(&proxy)
+	if err == nil && has {
+		return proxy.Salt, "proxy", true
+	}
+	return "", "", false
+}
+
+// RotateSalt 重新生成指定坐标的 salt(mode: "self" 或 "proxy")并持久化,返回新 salt。
+// ok 为 false 表示该 mode 下 way 不存在。
+func RotateSalt(way string, mode string) (newSalt string, ok bool) {
+	newSalt = util.RandToken(32)
+	switch mode {
+	case "self":
+		var self entity.SelfHelp
+		has, err := PublicEngine.Where("way = ?", way).Get(&self)
+		if err != nil || !has {
+			return "", false
+		}
+		self.Salt = newSalt
+		affected, err := PublicEngine.ID(self.Id).Update(&self)
+		if err != nil || affected == 0 {
+			return "", false
+		}
+		collection.MSelfHelpMode.Lock()
+		self.Salt = newSalt
+		collection.SelfHelpMode[way] = self
+		collection.MSelfHelpMode.Unlock()
+		return newSalt, true
+	case "proxy":
+		var proxy entity.Proxy
+		has, err := PublicEngine.Where("way = ?", way).Get(&proxy)
+		if err != nil || !has {
+			return "", false
+		}
+		affected, err := PublicEngine.ID(proxy.Id).Cols("salt").Update(&entity.Proxy{Salt: newSalt})
+		if err != nil || affected == 0 {
+			return "", false
+		}
+		collection.MProxyMode.Lock()
+		proxy.Salt = newSalt
+		collection.ProxyMode[way] = proxy
+		collection.MProxyMode.Unlock()
+		return newSalt, true
+	default:
+		return "", false
+	}
 }
