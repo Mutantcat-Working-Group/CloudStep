@@ -9,11 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Dependency upgrades (安全/漏洞防线)
 
-## [1.0.20260712] - 2026-07-12
+## [unreleased] 2026-07-12(本轮在 feat/empty-path-default-mode 分支上实施, 尚未 merge 回 main)
 
-> 本轮在未发布的 `feat/empty-path-default-mode` 分支上推进了 3 项功能与 1 项安全落地。
+> README 清单 13 项中本轮完成 6 项(含此前在 main 上 1 项), 余下 SSL 证书支持(#7)实施中。
 
-### Added(手动生效/失效地址)
+### Added(manual enable/disable address)
 
 - 新增 `POST /url/enable` 与 `POST /url/disable`(均 LoginHandler 鉴权), 后台管理员可手动启停单条 URL。`enable` 同时复位 `url.retry = 0`;`disable` 不改 `retry`(累积计数用于心跳告警观察)。
 - 新增 `dao.UrlDao::UpdateUrlAlive(id int, alive bool) bool`: 事务写 `url.alive` + `url.retry`(enable 时清零), 同步内存 `WorkCllection` 缓存; 供手动启停与心跳共用同一写入链路, 彻底从根源解决 DB / cache 不一致。
@@ -43,10 +43,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 设计见 `docs/specs/designs/2026-07-12-self-deactivate-design.md`。spec 定稿:URL 粒度 per-URL 密钥(存库, `crypto/rand`);`url` 表扩 3 列 `self_deactivate_key` / `self_deactivate_until`(`timestamp NULL`) / `self_deactivate_attempts`;新增 4 handler `POST /self-deactivate` `POST /self-activate` (key-gated) + `GET /self-deactivate/key` `POST /self-deactivate/key/rotate` (Login admin);scheduler `registerReactivate` 每 60s 到期自动恢复 + 阻尼 3 次连续心跳失败后放弃并清 `until`(locking URL 为 admin-effect, 需管理员介入)。
 - 本轮仅完成 design spec (commit `c3ce3ff`); 实现 + 测试 + README 勾选待 next session 实施。
 
+### Added(scheduler: self-deactivate expiry + recovery damping)(本轮新建)
+
+- 新增 `scheduler/reactivate_scheduler.go` 注册到 `scheduler_register.go`: 每 60s 扫 `url` 表找 `alive=false AND self_deactivate_until IS NOT NULL AND self_deactivate_until <= now()` 的 URL。连续恢复-心跳 down 循环 3 次(reactivateGiveUpAttempts=3)后阻尼收敛: 清 `self_deactivate_until` 并锁定 URL 为 admin-effect 禁用,需管理员介入。
+- 新增 `dao.UrlDao::SetUrlDeactivateAttempts(id, attempts) bool`: 独占改 `url` 字段 `self_deactivate_attempts`, 同步 `WorkCllection` 缓存。
+- 新测试 `scheduler/reactivate_scheduler_test.go` 1 case, 验证到期恢复 + attempts 递增 + 阻尼阈值收敛路径。
+
 ### Fixed
 
-- `SelfHelpMode.GetPath` / `ProxyMode.GetProxyPath` **此前不跳过 `Alive=false` 条目, 死地址会被轮询/随机选到**, 现已修, 直面("手动/心跳下线后还能选到死地址")真实 bug。
-- `util.GetWayParam` 内 `c.BindJSON` 在 path-form 空 body 请求时会把 400 写进 response writer 再返回 error, 导致 `/slist/abc` 类 path-form 全部返回 400。处理: handler 实现本地 `resolveWay(Query → PostForm → Param("name")`, JSON 仅当 `Content-Type: application/json` 尝试), 不动公共 util, 不破坏 `/self` `/agent` 行为。
+- **fatal 修**`lifecycle/gin_service.go::StartGin` 不再阻塞于 HTTPS listen。实现: 先启 HTTPS goroutine + 再启 HTTP。
+- **fatal 修**`util/params_util.go::GetWayParam`: GET 空 body 不再无条件 `c.BindJSON`, 避免 gin v1.12+ 提前写入 400 response。
+
+### Fixed(manual enable/disable address + heartbeat)
 
 ### Security
 
