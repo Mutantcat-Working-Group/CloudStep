@@ -17,6 +17,7 @@ func main() {
 		&router.PingRouter{},
 		&router.SettingRouter{},
 		&router.SelfHelpListRouter{},
+		&router.SaltAdminRouter{},
 	)
 	lifecycle.StartGin(gin, "9091")
 }

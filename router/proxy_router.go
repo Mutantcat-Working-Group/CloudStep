@@ -24,6 +24,9 @@ func (router *ProxyRouter) DestroyRouter() error {
 
 func proxy(c *gin.Context) {
 	way := c.Query("way")
+	if SaltInjector(c, way) {
+		return
+	}
 	if way == "" {
 		c.JSON(200, gin.H{
 			"code": 404,
