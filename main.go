@@ -15,6 +15,7 @@ func main() {
 		&router.ProxyRouter{},
 		&router.PingRouter{},
 		&router.SettingRouter{},
+		&router.SelfHelpListRouter{},
 	)
 	lifecycle.StartGin(gin, "9091")
 }
