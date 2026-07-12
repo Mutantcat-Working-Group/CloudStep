@@ -7,5 +7,6 @@ import (
 func init() {
 	tm := timer.NewTimer()
 	registerHotTimeCleanScheduler(tm)
+	registerHeartbeatScheduler(tm)
 	go tm.Run()
 }

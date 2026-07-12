@@ -177,3 +177,34 @@ func UpdateUrlAlive(id int, alive bool) bool {
 	collection.MWorkCllection.Unlock()
 	return true
 }
+
+// UpdateUrlRetry 按 id 改 url.Retry 字段到 targetRetry。
+// 读 DB 取当前 retry, 若已等于 target 直接返 true(省 IO 幂等);
+// 否则单行写 retry 字段。调用方需保证 id 存在 — miss 返 false。
+func UpdateUrlRetry(id int, targetRetry int) bool {
+	var u entity.Url
+	has, err := PublicEngine.ID(id).Get(&u)
+	if err != nil || !has {
+		return false
+	}
+	if u.Retry == targetRetry {
+		return true
+	}
+	u.Retry = targetRetry
+	affected, err := PublicEngine.ID(id).Cols("retry").Update(&u)
+	if err != nil || affected == 0 {
+		return false
+	}
+	// 同步 cache
+	collection.MWorkCllection.Lock()
+	for coll, urls := range collection.WorkCllection {
+		for i := range urls {
+			if urls[i].Id == id {
+				collection.WorkCllection[coll][i].Retry = targetRetry
+				break
+			}
+		}
+	}
+	collection.MWorkCllection.Unlock()
+	return true
+}
