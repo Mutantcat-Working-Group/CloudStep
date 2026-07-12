@@ -22,6 +22,8 @@ func InitSystemConfig() {
 		}
 	}
 	util.SetSystemConfigFromDao(cfg)
+	// 把 id→name 查询注入 util 的默认集解析器(避免 util import dao 形成循环)。
+	util.SetDefaultCollectionResolver(GetCollectionNameById)
 }
 
 func GetSystemConfig() entity.SystemConfig {
