@@ -42,23 +42,23 @@ func GetSelfHelpList(way string) (source listSource, point string, urls []entity
 		return SrcNone, "", nil
 	}
 
-	MSelfHelpMode.Lock()
+	MSelfHelpMode.RLock()
 	sh, ok := SelfHelpMode[way]
-	MSelfHelpMode.Unlock()
+	MSelfHelpMode.RUnlock()
 	if ok {
-		MWorkCllection.Lock()
+		MWorkCllection.RLock()
 		urls = WorkCllection[sh.Point]
-		MWorkCllection.Unlock()
+		MWorkCllection.RUnlock()
 		return SrcSelf, sh.Point, urls
 	}
 
-	MProxyMode.Lock()
+	MProxyMode.RLock()
 	px, ok := ProxyMode[way]
-	MProxyMode.Unlock()
+	MProxyMode.RUnlock()
 	if ok {
-		MWorkCllection.Lock()
+		MWorkCllection.RLock()
 		urls = WorkCllection[px.Point]
-		MWorkCllection.Unlock()
+		MWorkCllection.RUnlock()
 		return SrcProxy, px.Point, urls
 	}
 

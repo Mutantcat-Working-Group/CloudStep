@@ -102,12 +102,12 @@ func readRetry(id int) int {
 
 // beatAll 从 cache 全量读出所有 URL 后调 beat。生产入口。
 func beatAll() {
-	collection.MWorkCllection.Lock()
+	collection.MWorkCllection.RLock()
 	all := make([]entity.Url, 0)
 	for _, urls := range collection.WorkCllection {
 		all = append(all, urls...)
 	}
-	collection.MWorkCllection.Unlock()
+	collection.MWorkCllection.RUnlock()
 	beat(all)
 }
 

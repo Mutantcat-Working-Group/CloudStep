@@ -8,7 +8,7 @@ import (
 )
 
 var token = ""
-var mToken sync.Mutex
+var mToken sync.RWMutex
 
 type LoginRouter struct {
 }
@@ -31,8 +31,8 @@ func (router *LoginRouter) DestroyRouter() error {
 // 需要登录的请求处理的时候必须经过这个过滤器的验证
 func LoginHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		mToken.Lock()
-		defer mToken.Unlock()
+		mToken.RLock()
+		defer mToken.RUnlock()
 		userToken := c.GetHeader("Token")
 		if !(userToken == token) || userToken == "" {
 			c.JSON(200, gin.H{
@@ -118,7 +118,9 @@ func change(c *gin.Context) {
 			"code": 0,
 			"msg":  "修改成功",
 		})
+		mToken.Lock()
 		token = util.RandToken(8)
+		mToken.Unlock()
 	} else {
 		c.JSON(200, gin.H{
 			"code": 1,

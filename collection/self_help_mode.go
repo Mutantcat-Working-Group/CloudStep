@@ -28,11 +28,13 @@ func GetPath(way string) string {
 			return ""
 		}
 	}
-	MWorkCllection.Lock()
-	MSelfHelpMode.Lock()
-	defer MSelfHelpMode.Unlock()
+
+	// 读路径: 两把 RLock, random 模式全程无写锁。
+	MWorkCllection.RLock()
+	MSelfHelpMode.RLock()
 	if _, ok := SelfHelpMode[way]; !ok {
-		MWorkCllection.Unlock()
+		MSelfHelpMode.RUnlock()
+		MWorkCllection.RUnlock()
 		return ""
 	}
 	var now = SelfHelpMode[way]
@@ -40,17 +42,21 @@ func GetPath(way string) string {
 	// release it. Filtering and selection run on the snapshot so the
 	// collection lock is not held while scanning potentially many dead urls.
 	urls := WorkCllection[now.Point]
-	MWorkCllection.Unlock()
+	MWorkCllection.RUnlock()
 
 	alive := filterAlive(urls)
 	if len(alive) == 0 {
+		MSelfHelpMode.RUnlock()
 		return ""
 	}
 
 	switch now.Mode {
 	case "random":
+		// random 模式: 全程读锁, 不写回 index, 零阻塞。
 		now.Index = util.RandInt(0, len(alive))
+		MSelfHelpMode.RUnlock()
 		return alive[now.Index].Path
+
 	case "polling":
 		if now.Index < 0 || now.Index >= len(alive) {
 			now.Index = 0
@@ -60,8 +66,18 @@ func GetPath(way string) string {
 		if now.Index >= len(alive) {
 			now.Index = 0
 		}
-		SelfHelpMode[way] = now
+		MSelfHelpMode.RUnlock()
+
+		// polling 写回 index: 仅此几微秒用写锁。
+		MSelfHelpMode.Lock()
+		if e, ok := SelfHelpMode[way]; ok {
+			e.Index = now.Index
+			SelfHelpMode[way] = e
+		}
+		MSelfHelpMode.Unlock()
 		return path
 	}
+
+	MSelfHelpMode.RUnlock()
 	return ""
 }

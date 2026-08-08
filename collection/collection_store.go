@@ -7,12 +7,12 @@ import (
 
 // 所有映射集
 var WorkCllection = make(map[string][]entity.Url)
-var MWorkCllection sync.Mutex
+var MWorkCllection sync.RWMutex
 
 // 自助模式（指向映射集中的某几项）
 var SelfHelpMode = make(map[string]entity.SelfHelp)
-var MSelfHelpMode sync.Mutex
+var MSelfHelpMode sync.RWMutex
 
 // 代理模式（指向映射集中的某几项）
 var ProxyMode = make(map[string]entity.Proxy)
-var MProxyMode sync.Mutex
+var MProxyMode sync.RWMutex

@@ -8,7 +8,6 @@
 package scheduler
 
 import (
-	"com.mutantcat.cloud_step/collection"
 	"com.mutantcat.cloud_step/dao"
 	"com.mutantcat.cloud_step/entity"
 	"log"
@@ -41,27 +40,15 @@ func reactivateBeat() {
 }
 
 func reactivateOne(u entity.Url) {
-	collection.MWorkCllection.Lock()
+	// u 是 DB 查出的局部变量, 直接读字段无需加锁。
 	attempts := u.SelfDeactivateAttempts
-	collection.MWorkCllection.Unlock()
 
 	if attempts >= reactivateGiveUpAttempts {
+		// ClearUrlSelfDeactivate 内部已持 MWorkCllection 锁更新缓存, 无需重复写。
 		if !dao.ClearUrlSelfDeactivate(u.Id) {
 			return
 		}
 		log.Printf("[reactivate] url id=%d attempts=%d → give up, needs admin", u.Id, attempts)
-		collection.MWorkCllection.Lock()
-		for coll, urls := range collection.WorkCllection {
-			for i := range urls {
-				if urls[i].Id == u.Id {
-					collection.WorkCllection[coll][i].SelfDeactivateUntil = nil
-					collection.WorkCllection[coll][i].SelfDeactivateAttempts = 0
-					collection.MWorkCllection.Unlock()
-					return
-				}
-			}
-		}
-		collection.MWorkCllection.Unlock()
 		return
 	}
 

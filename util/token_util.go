@@ -4,7 +4,8 @@ import (
 	"crypto/rand"
 )
 
-const letters = "a2b1cdef4gh34ijk453lmn3opqrstuvwxytyza66zABCDmutant4catEFGH22IJK33LMN44OPQR44ST23UVWX12YZ"
+// 64 字符字母表(A-Z a-z 0-9 + 2 填充); 256 % 64 == 0 → v%lettersLen 无偏差。
+const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-"
 
 // 生成随机字符串
 func RandToken(n int) string {

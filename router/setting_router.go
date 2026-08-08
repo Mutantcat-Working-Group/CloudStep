@@ -274,10 +274,18 @@ func updateUrl(c *gin.Context) {
 		})
 		return
 	}
-	if url.Path == "" {
+	if url.Path == "" || url.Id <= 0 {
 		c.JSON(200, gin.H{
 			"code": 1,
 			"msg":  "error",
+		})
+		return
+	}
+	// 校验 url 是否存在, 避免静默写失败
+	if _, ok := dao.GetUrl(url.Id); !ok {
+		c.JSON(200, gin.H{
+			"code": 2,
+			"msg":  "url not found",
 		})
 		return
 	}

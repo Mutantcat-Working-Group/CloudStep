@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -31,7 +32,7 @@ func Proxy(targetURL string, c *gin.Context) {
 		} else if key == "*way**" {
 			newValues.Set("way", value[0])
 		} else {
-			newValues.Set(key, value[0])
+			newValues[key] = value
 		}
 	}
 	// 将修改后的参数设置回c.Request.URL
@@ -143,6 +144,7 @@ func sanitizeError(err error, detail string) string {
 
 
 // checkIntranetBlocked 在管理员关闭内网代理时,拒绝代理到私有/回环/未指定地址。
+// 对直传 IP 做 ClassifyIP; 对域名额外做 DNS 解析, 任一解析结果命中内网则拦截(防 DNS rebinding)。
 // 返回空字符串表示放行;否则返回被拒原因与一个非 nil 的 error。
 func checkIntranetBlocked(targetURL string) (string, error) {
 	if AllowIntranet() {
@@ -152,8 +154,20 @@ func checkIntranetBlocked(targetURL string) (string, error) {
 	if err != nil || parsed.Hostname() == "" {
 		return "", err
 	}
-	if reason, blocked := ClassifyIP(parsed.Hostname()); blocked {
+	host := parsed.Hostname()
+	if reason, blocked := ClassifyIP(host); blocked {
 		return reason, fmt.Errorf("禁止代理到内网地址")
+	}
+	// host 不是直传 IP(是域名): DNS 解析后逐个检查, 防 rebinding。
+	ips, err := net.LookupHost(host)
+	if err != nil {
+		// DNS 解析失败: 放行, 由后续 HTTP 请求自行报错(避免误拦)。
+		return "", nil
+	}
+	for _, ipStr := range ips {
+		if reason, blocked := ClassifyIP(ipStr); blocked {
+			return reason, fmt.Errorf("域名 %s 解析到内网地址 %s", host, ipStr)
+		}
 	}
 	return "", nil
 }

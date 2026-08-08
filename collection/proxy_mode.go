@@ -28,11 +28,13 @@ func GetProxyPath(way string) string {
 			return ""
 		}
 	}
-	MWorkCllection.Lock()
-	MProxyMode.Lock()
-	defer MProxyMode.Unlock()
+
+	// 读路径: 两把 RLock, random 模式全程无写锁。
+	MWorkCllection.RLock()
+	MProxyMode.RLock()
 	if _, ok := ProxyMode[way]; !ok {
-		MWorkCllection.Unlock()
+		MProxyMode.RUnlock()
+		MWorkCllection.RUnlock()
 		return ""
 	}
 	var now = ProxyMode[way]
@@ -40,17 +42,21 @@ func GetProxyPath(way string) string {
 	// release it. Filtering and selection run on the snapshot so the
 	// collection lock is not held while scanning potentially many dead urls.
 	urls := WorkCllection[now.Point]
-	MWorkCllection.Unlock()
+	MWorkCllection.RUnlock()
 
 	alive := filterProxyAlive(urls)
 	if len(alive) == 0 {
+		MProxyMode.RUnlock()
 		return ""
 	}
 
 	switch now.Mode {
 	case "random":
+		// random 模式: 全程读锁, 不写回 index, 零阻塞。
 		now.Index = util.RandInt(0, len(alive))
+		MProxyMode.RUnlock()
 		return alive[now.Index].Path
+
 	case "polling":
 		if now.Index < 0 || now.Index >= len(alive) {
 			now.Index = 0
@@ -60,15 +66,25 @@ func GetProxyPath(way string) string {
 		if now.Index >= len(alive) {
 			now.Index = 0
 		}
-		ProxyMode[way] = now
+		MProxyMode.RUnlock()
+
+		// polling 写回 index: 仅此几微秒用写锁。
+		MProxyMode.Lock()
+		if e, ok := ProxyMode[way]; ok {
+			e.Index = now.Index
+			ProxyMode[way] = e
+		}
+		MProxyMode.Unlock()
 		return path
 	}
+
+	MProxyMode.RUnlock()
 	return ""
 }
 
 func GetProxyMode(way string) string {
-	MProxyMode.Lock()
-	defer MProxyMode.Unlock()
+	MProxyMode.RLock()
+	defer MProxyMode.RUnlock()
 	if _, ok := ProxyMode[way]; !ok {
 		return ""
 	}
