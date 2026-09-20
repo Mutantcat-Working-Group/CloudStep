@@ -1,0 +1,12 @@
+.git
+.github
+build
+dist
+staging
+node_modules
+web/*/node_modules
+web/*/dist
+cloud_step.db
+*.log
+Dockerfile
+.dockerignore

@@ -4,15 +4,15 @@ import (
 	"com.mutantcat.cloud_step/collection"
 	"com.mutantcat.cloud_step/entity"
 	"fmt"
-	_ "github.com/mattn/go-sqlite3"
 	"log"
+	_ "modernc.org/sqlite"
 	"xorm.io/xorm"
 )
 
 var PublicEngine *xorm.Engine
 
 func init() {
-	engine, err := xorm.NewEngine("sqlite3", "./cloud_step.db")
+	engine, err := xorm.NewEngine("sqlite", "./cloud_step.db")
 	if err != nil {
 		log.Print(err)
 	}

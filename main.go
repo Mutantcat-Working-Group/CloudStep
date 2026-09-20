@@ -7,6 +7,9 @@ import (
 	_ "com.mutantcat.cloud_step/scheduler"
 )
 
+// version 为当前发布版本号，release 构建可用 -ldflags -X main.version 覆盖。
+var version = "1.0.20260920"
+
 func main() {
 	gin := lifecycle.InitGin()
 	lifecycle.RegisterRouter(gin, &router.WebRouter{},
