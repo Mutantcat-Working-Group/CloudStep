@@ -62,7 +62,7 @@ jobs:
             runner: ubuntu-22.04
           - os: linux
             arch: arm64
-            runner: ubuntu-22.04
+            runner: ubuntu-24.04-arm
     env:
       APP_NAME: CloudStep
       BINARY_NAME: cloud-step
@@ -224,8 +224,6 @@ jobs:
           EOF
           cp "${APPDIR}/${APP_NAME}.svg" "${APPDIR}/usr/share/icons/hicolor/256x256/apps/${APP_NAME}.svg"
           if [ "$GOARCH" = "arm64" ]; then
-            sudo apt-get update
-            sudo apt-get install -y qemu-user-static binfmt-support
             curl -fsSL -o appimagetool.AppImage https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-aarch64.AppImage
           else
             curl -fsSL -o appimagetool.AppImage https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
